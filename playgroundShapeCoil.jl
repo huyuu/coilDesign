@@ -13,13 +13,13 @@ const R = h
 
 const sourceIntervals = 500  # per part
 const sampleIntervals = 500
-const z = -0.5d
+const z = 1.8e-2  # 0.6cm
 
-const sampleXHalfRange = l
+const sampleXHalfRange = 0.2l
 const sampleXSpacing = 2*sampleXHalfRange/sampleIntervals
 const sampleXIntervals = [ -sampleXHalfRange + sampleXSpacing*i for i=1:sampleIntervals-1 ]
 
-const sampleYHalfRange = 0.5h
+const sampleYHalfRange = 0.2h
 const sampleYSpacing = 2*sampleYHalfRange/sampleIntervals
 const sampleYIntervals = [ -sampleYHalfRange + sampleYSpacing*i for i=1:sampleIntervals-1 ]
 
@@ -165,6 +165,7 @@ let
     minResult = min(zValues...)
     maxResult = max(zValues...)
     meanResult = mean(zValues)
+    println("For z = $(z), areaWidth = $(sampleYHalfRange):")
     println("min B: $(minResult*1e3) [mT]")
     println("max B: $(maxResult*1e3) [mT]")
     println("Magnetic Field Variant Rate: $( (maxResult - minResult)/meanResult*100 )%")
@@ -204,12 +205,9 @@ map(sampleYIntervals) do value
 end
 
 
-
 map([fileX, fileY, fileZ, fileXPoints, fileYPoints]) do file
     close(file)
 end
 
 
 # MARK: - Plots
-# using Plots
-# pyplot()

@@ -8,7 +8,7 @@ import pandas as pd
 
 # Variables
 
-preferredZ = -2.5
+preferredZ = 1.8
 I = 1.0
 N = 1
 dirName = f'I={I}_N={N}'
@@ -39,9 +39,11 @@ ySamplePoints = readSamplePointsOf(var='y', planeZValue=preferredZ) * 1e2
 
 fig = pl.figure()
 ax = pl.axes(projection='3d')
-ax.set_xlabel('X Distance [cm]', fontsize=20)
-ax.set_ylabel('Y Distance [cm]', fontsize=20)
-ax.set_zlabel('Magnetic Field B [mT]', fontsize=20)
+ax.set_xlabel('X Distance [cm]', fontsize=22, labelpad=25)
+ax.set_ylabel('Y Distance [cm]', fontsize=22, labelpad=25)
+ax.set_zlabel('Magnetic Field B [mT]', fontsize=22, labelpad=25)
+ax.set_title(f'At z = {preferredZ}cm', fontsize=26)
+ax.tick_params(labelsize=16)
 
 ax.plot_surface(xSamplePoints.values, ySamplePoints.values.reshape(1, len(ySamplePoints)), zElementsOfB.values, rstride=20, cstride=20, cmap='Reds')
 pl.show()
