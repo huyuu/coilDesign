@@ -13,13 +13,13 @@ const R = h
 
 const sourceIntervals = 1000  # per part
 const sampleIntervals = 1000
-const z = -0.5d
+const z = 0.0
 
 const sampleXHalfRange = l
 const sampleXSpacing = 2*sampleXHalfRange/sampleIntervals
 const sampleXIntervals = [ -sampleXHalfRange + sampleXSpacing*i for i=1:sampleIntervals-1 ]
 
-const sampleYHalfRange = h
+const sampleYHalfRange = 0.5h
 const sampleYSpacing = 2*sampleYHalfRange/sampleIntervals
 const sampleYIntervals = [ -sampleYHalfRange + sampleYSpacing*i for i=1:sampleIntervals-1 ]
 
@@ -87,11 +87,56 @@ function c4(;point::Point, var::Float64)::Array{Float64, 1}
 end
 
 
-function BAtPoint(point::Point)::Array{Float64, 1}
+function c5(;point::Point, var::Float64)::Array{Float64, 1}
+    xVector = 0
+    yVector = -(point.z-d)
+    zVector = (point.y+h)
+    denominator = ( (point.x-var)^2 + (point.y+h)^2 + (point.z-d)^2 ) ^ (1.5)
+    return [ xVector; yVector/denominator; zVector/denominator ]
+end
+
+
+function c6(;point::Point, var::Float64)::Array{Float64, 1}
+    xVector = 0.0
+    yVector = (point.z-d)
+    zVector = -(point.y-h)
+    denominator = ( (point.x-var)^2 + (point.y-h)^2 + (point.z-d)^2 ) ^ (1.5)
+    return [ xVector; yVector/denominator; zVector/denominator ]
+end
+
+
+function c7(;point::Point, var::Float64)::Array{Float64, 1}
+    xVector = (point.z-d)R*cos(var)
+    yVector = (point.z-d)R*sin(var)
+    zVector = -R*( (point.y-R*sin(var))sin(var) + (point.x-l-R*cos(var))cos(var) )
+    denominator = ( (point.x-l-R*cos(var))^2 + (point.y-R*sin(var))^2 + (point.z-d)^2 ) ^ (1.5)
+    return [ xVector/denominator; yVector/denominator; zVector/denominator ]
+end
+
+
+function c8(;point::Point, var::Float64)::Array{Float64, 1}
+    xVector = (point.z-d)R*cos(var)
+    yVector = (point.z-d)R*sin(var)
+    zVector = -R*( (point.y-R*sin(var))sin(var) + (point.x+l-R*cos(var))cos(var) )
+    denominator = ( (point.x+l-R*cos(var))^2 + (point.y-R*sin(var))^2 + (point.z-d)^2 ) ^ (1.5)
+    return [ xVector/denominator; yVector/denominator; zVector/denominator ]
+end
+
+
+function BAtPointFromLower(point::Point)::Array{Float64, 1}
     result::Array{Float64, 1} = numericalIntegrateOf(c1; lowerLimit=-l, upperLimit=l, n=sourceIntervals, point=point)
     result += numericalIntegrateOf(c2; lowerLimit=-l, upperLimit=l, n=sourceIntervals, point=point)
     result += numericalIntegrateOf(c3; lowerLimit=-pi/2, upperLimit=pi/2, n=sourceIntervals, point=point)
     result += numericalIntegrateOf(c4; lowerLimit=pi/2, upperLimit=3pi/2, n=sourceIntervals, point=point)
+    return result
+end
+
+
+function BAtPointFromUpper(point::Point)::Array{Float64, 1}
+    result::Array{Float64, 1} = numericalIntegrateOf(c5; lowerLimit=-l, upperLimit=l, n=sourceIntervals, point=point)
+    result += numericalIntegrateOf(c6; lowerLimit=-l, upperLimit=l, n=sourceIntervals, point=point)
+    result += numericalIntegrateOf(c7; lowerLimit=-pi/2, upperLimit=pi/2, n=sourceIntervals, point=point)
+    result += numericalIntegrateOf(c8; lowerLimit=pi/2, upperLimit=3pi/2, n=sourceIntervals, point=point)
     return result
 end
 
@@ -104,9 +149,11 @@ result = map(zeros((samplePoints, samplePoints))) do x
     Point(x, x, x)
 end
 
+using Base.Threads
 @time for (xIndex, xValue) in enumerate(sampleXIntervals), (yIndex, yValue) in enumerate(sampleYIntervals)
     global result
-    resultInArray = myu0/(4pi)*(N*I) * BAtPoint(Point(xValue, yValue, z))  # = BVector at P(x, y, z)
+    resultInArray = myu0/(4pi)*(N*I) .* ( BAtPointFromLower(Point(xValue, yValue, z)) .+ BAtPointFromUpper(Point(xValue, yValue, z)) )
+    # resultInArray = myu0/(4pi)*(N*I) .* BAtPointFromLower(Point(xValue, yValue, z))
     result[xIndex, yIndex] = Point(resultInArray)
 end
 
