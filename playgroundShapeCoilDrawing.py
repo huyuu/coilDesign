@@ -8,7 +8,7 @@ import pandas as pd
 
 # Variables
 
-preferredZ = 0.0
+preferredZ = -2.5
 I = 1.0
 N = 1
 dirName = f'I={I}_N={N}'

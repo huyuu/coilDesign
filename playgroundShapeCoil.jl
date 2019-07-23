@@ -11,9 +11,9 @@ const R = h
 
 # Variables
 
-const sourceIntervals = 1000  # per part
-const sampleIntervals = 1000
-const z = 0.0
+const sourceIntervals = 500  # per part
+const sampleIntervals = 500
+const z = -0.5d
 
 const sampleXHalfRange = l
 const sampleXSpacing = 2*sampleXHalfRange/sampleIntervals
@@ -159,14 +159,27 @@ end
 
 println("size of result is $(size(result))")
 
+using Statistics
+let
+    zValues = [ point.z for point in result ]
+    minResult = min(zValues...)
+    maxResult = max(zValues...)
+    meanResult = mean(zValues)
+    println("min B: $(minResult*1e3) [mT]")
+    println("max B: $(maxResult*1e3) [mT]")
+    println("Magnetic Field Variant Rate: $( (maxResult - minResult)/meanResult*100 )%")
+end
+
+
+
 
 # MARK: - Storage
 dirName = "I=$(round(I, sigdigits=2))_N=$(round(Int, N))"
 fileX, fileY, fileZ = map(["x", "y", "z"]) do var
-    open("$(dirName)/$(var)ElementsOfBAtZ=$(round(z*100, sigdigits=3))cm.csv", "w")
+    open("$(dirName)/$(var)ElementsOfBAtZ=$(round(z*100, sigdigits=2))cm.csv", "w")
 end
 fileXPoints, fileYPoints = map(('x', 'y')) do var
-    open("$(dirName)/$(var)SamplePointsAtZ=$(round(z*100, sigdigits=3))cm.csv", "w")
+    open("$(dirName)/$(var)SamplePointsAtZ=$(round(z*100, sigdigits=2))cm.csv", "w")
 end
 
 
@@ -174,7 +187,7 @@ for (xIndex, xValue) in enumerate(sampleXIntervals)
     for (yIndex, yValue) in enumerate(sampleYIntervals)
         point = result[xIndex, yIndex]
         map( zip((fileX, fileY, fileZ), (point.x, point.y, point.z)) ) do (file, value)
-            write(file, "$(round(value, sigdigits=6)),")
+            write(file, "$(round(value, sigdigits=12)),")
         end
     end
 
