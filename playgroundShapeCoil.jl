@@ -11,21 +11,17 @@ const R = h
 
 # Variables
 
-const sourceIntervals = 100  # per part
-const sampleIntervals = 300
+const sourceIntervals = 1000  # per part
+const sampleIntervals = 1000
+const z = -0.5d
 
-
-const sampleXHalfRange = l+R
+const sampleXHalfRange = l
 const sampleXSpacing = 2*sampleXHalfRange/sampleIntervals
 const sampleXIntervals = [ -sampleXHalfRange + sampleXSpacing*i for i=1:sampleIntervals-1 ]
 
 const sampleYHalfRange = h
 const sampleYSpacing = 2*sampleYHalfRange/sampleIntervals
 const sampleYIntervals = [ -sampleYHalfRange + sampleYSpacing*i for i=1:sampleIntervals-1 ]
-
-const sampleZHalfRange = d
-const sampleZSpacing = 2*sampleZHalfRange/sampleIntervals
-const sampleZIntervals = [ -sampleZHalfRange + sampleZSpacing*i for i=1:sampleIntervals-1 ]
 
 
 # Models
@@ -104,36 +100,52 @@ end
 
 # MARK: -  Calculation
 const samplePoints = sampleIntervals-1
-result = map(zeros((samplePoints, samplePoints, samplePoints))) do x
+result = map(zeros((samplePoints, samplePoints))) do x
     Point(x, x, x)
 end
 
-@time for (xIndex, xValue) in enumerate(sampleXIntervals), (yIndex, yValue) in enumerate(sampleYIntervals), (zIndex, zValue) in enumerate(sampleZIntervals)
+@time for (xIndex, xValue) in enumerate(sampleXIntervals), (yIndex, yValue) in enumerate(sampleYIntervals)
     global result
-    resultInArray = Float64(myu0/(4pi)*(N*I)) * BAtPoint(Point(xValue, yValue, zValue))  # = BVector at P(x, y, z)
-    result[xIndex, yIndex, zIndex] = Point(resultInArray)
+    resultInArray = myu0/(4pi)*(N*I) * BAtPoint(Point(xValue, yValue, z))  # = BVector at P(x, y, z)
+    result[xIndex, yIndex] = Point(resultInArray)
 end
 
 println("size of result is $(size(result))")
 
 
 # MARK: - Storage
-# fileX = open("xElementsOfB.csv", "w")
-# fileY = open("yElementsOfB.csv", "w")
-# fileZ = open("zElementsOfB.csv", "w")
-
+dirName = "I=$(round(I, sigdigits=2))_N=$(round(Int, N))"
 fileX, fileY, fileZ = map(["x", "y", "z"]) do var
-    open("$(var)ElementsOfB.csv", "w")
+    open("$(dirName)/$(var)ElementsOfBAtZ=$(round(z*100, sigdigits=3))cm.csv", "w")
+end
+fileXPoints, fileYPoints = map(('x', 'y')) do var
+    open("$(dirName)/$(var)SamplePointsAtZ=$(round(z*100, sigdigits=3))cm.csv", "w")
 end
 
-for (xIndex, xValue) in enumerate(sampleXIntervals), (yIndex, yValue) in enumerate(sampleYIntervals), (zIndex, zValue) in enumerate(sampleZIntervals)
-    point = result[xIndex, yIndex, zIndex]
-    write(fileX, "$(round(xValue, digits=4)),$(round(yValue, digits=4)),$(round(zValue, digits=4)),$(round(point.x, sigdigits=6))\n")
-    write(fileY, "$(round(xValue, digits=4)),$(round(yValue, digits=4)),$(round(zValue, digits=4)),$(round(point.y, sigdigits=6))\n")
-    write(fileZ, "$(round(xValue, digits=4)),$(round(yValue, digits=4)),$(round(zValue, digits=4)),$(round(point.z, sigdigits=6))\n")
+
+for (xIndex, xValue) in enumerate(sampleXIntervals)
+    for (yIndex, yValue) in enumerate(sampleYIntervals)
+        point = result[xIndex, yIndex]
+        map( zip((fileX, fileY, fileZ), (point.x, point.y, point.z)) ) do (file, value)
+            write(file, "$(round(value, sigdigits=6)),")
+        end
+    end
+
+    map((fileX, fileY, fileZ)) do file
+        write(file, "\n")
+    end
 end
 
-map([fileX, fileY, fileZ]) do file
+map(sampleXIntervals) do value
+    write(fileXPoints, "$(round(value, sigdigits=4))\n")
+end
+map(sampleYIntervals) do value
+    write(fileYPoints, "$(round(value, sigdigits=4))\n")
+end
+
+
+
+map([fileX, fileY, fileZ, fileXPoints, fileYPoints]) do file
     close(file)
 end
 
