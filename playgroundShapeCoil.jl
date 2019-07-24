@@ -12,14 +12,14 @@ const R = h
 # Variables
 
 const sourceIntervals = 500  # per part
-const sampleIntervals = 500
-const z = 1.8e-2  # 0.6cm
+const sampleIntervals = 1000
+const zs = ( 0.0, 0.2d, 0.4d, 0.6d )
 
-const sampleXHalfRange = 0.2l
+const sampleXHalfRange = 0.3l
 const sampleXSpacing = 2*sampleXHalfRange/sampleIntervals
 const sampleXIntervals = [ -sampleXHalfRange + sampleXSpacing*i for i=1:sampleIntervals-1 ]
 
-const sampleYHalfRange = 0.2h
+const sampleYHalfRange = 0.3h
 const sampleYSpacing = 2*sampleYHalfRange/sampleIntervals
 const sampleYIntervals = [ -sampleYHalfRange + sampleYSpacing*i for i=1:sampleIntervals-1 ]
 
@@ -141,73 +141,84 @@ function BAtPointFromUpper(point::Point)::Array{Float64, 1}
 end
 
 
-# Main
-
-# MARK: -  Calculation
-const samplePoints = sampleIntervals-1
-result = map(zeros((samplePoints, samplePoints))) do x
-    Point(x, x, x)
-end
-
-using Base.Threads
-@time for (xIndex, xValue) in enumerate(sampleXIntervals), (yIndex, yValue) in enumerate(sampleYIntervals)
-    global result
-    resultInArray = myu0/(4pi)*(N*I) .* ( BAtPointFromLower(Point(xValue, yValue, z)) .+ BAtPointFromUpper(Point(xValue, yValue, z)) )
-    # resultInArray = myu0/(4pi)*(N*I) .* BAtPointFromLower(Point(xValue, yValue, z))
-    result[xIndex, yIndex] = Point(resultInArray)
-end
-
-println("size of result is $(size(result))")
-
 using Statistics
-let
+function calculateBin(;planeZValue::Float64)
+    samplePoints = sampleIntervals-1
+    result = map(zeros((samplePoints, samplePoints))) do x
+        Point(x, x, x)
+    end
+
+    @time for (xIndex, xValue) in enumerate(sampleXIntervals), (yIndex, yValue) in enumerate(sampleYIntervals)
+        resultInArray = myu0/(4pi)*(N*I) .* ( BAtPointFromLower(Point(xValue, yValue, planeZValue)) .+ BAtPointFromUpper(Point(xValue, yValue, planeZValue)) )
+        result[xIndex, yIndex] = Point(resultInArray)
+    end
+
     zValues = [ point.z for point in result ]
-    minResult = min(zValues...)
-    maxResult = max(zValues...)
-    meanResult = mean(zValues)
-    println("For z = $(z), areaWidth = $(sampleYHalfRange):")
-    println("min B: $(minResult*1e3) [mT]")
-    println("max B: $(maxResult*1e3) [mT]")
-    println("Magnetic Field Variant Rate: $( (maxResult - minResult)/meanResult*100 )%")
+    minBOfZElement = min(zValues...)
+    maxBOfZElement = max(zValues...)
+    meanBOfZElement = mean(zValues)
+    # println("For z = $(planeZValue), areaWidth = $(round(sampleYHalfRange/h, sigdigits=2))h:")
+    # println("min B: $(minBOfZElement*1e3) [mT]")
+    # println("max B: $(maxBOfZElement*1e3) [mT]")
+    # println("Magnetic Field Variant Rate: $( (maxBOfZElement - minBOfZElement)/meanBOfZElement*100 )%")
+    return (result, minBOfZElement, maxBOfZElement, meanBOfZElement)
 end
 
 
+function store(result::Array{Point, 2}; planeZValue::Float64)
+    dirName = "I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round(sampleYHalfRange/h, sigdigits=2))_l=$(round(sampleXHalfRange/l, sigdigits=2))"
+    fileX, fileY, fileZ = map(["x", "y", "z"]) do var
+        open("$(dirName)/$(var)ElementsOfBAtZ=$(round(planeZValue*100/d, sigdigits=2)).csv", "w")
+    end
+    fileXPoints, fileYPoints = map(('x', 'y')) do var
+        open("$(dirName)/$(var)SamplePointsAtZ=$(round(planeZValue*100/d, sigdigits=2)).csv", "w")
+    end
 
 
-# MARK: - Storage
-dirName = "I=$(round(I, sigdigits=2))_N=$(round(Int, N))"
-fileX, fileY, fileZ = map(["x", "y", "z"]) do var
-    open("$(dirName)/$(var)ElementsOfBAtZ=$(round(z*100, sigdigits=2))cm.csv", "w")
-end
-fileXPoints, fileYPoints = map(('x', 'y')) do var
-    open("$(dirName)/$(var)SamplePointsAtZ=$(round(z*100, sigdigits=2))cm.csv", "w")
-end
-
-
-for (xIndex, xValue) in enumerate(sampleXIntervals)
-    for (yIndex, yValue) in enumerate(sampleYIntervals)
-        point = result[xIndex, yIndex]
-        map( zip((fileX, fileY, fileZ), (point.x, point.y, point.z)) ) do (file, value)
-            write(file, "$(round(value, sigdigits=12)),")
+    for (xIndex, xValue) in enumerate(sampleXIntervals)
+        for (yIndex, yValue) in enumerate(sampleYIntervals)
+            point = result[xIndex, yIndex]
+            map( zip((fileX, fileY, fileZ), (point.x, point.y, point.z)) ) do (file, value)
+                write(file, "$(round(value, sigdigits=12)),")
+            end
+        end
+        map((fileX, fileY, fileZ)) do file
+            write(file, "\n")
         end
     end
 
-    map((fileX, fileY, fileZ)) do file
-        write(file, "\n")
+    map(sampleXIntervals) do value
+        write(fileXPoints, "$(round(value, sigdigits=4))\n")
+    end
+    map(sampleYIntervals) do value
+        write(fileYPoints, "$(round(value, sigdigits=4))\n")
+    end
+
+
+    map([fileX, fileY, fileZ, fileXPoints, fileYPoints]) do file
+        close(file)
     end
 end
 
-map(sampleXIntervals) do value
-    write(fileXPoints, "$(round(value, sigdigits=4))\n")
+
+
+# Main
+
+minB = 1.0
+maxB = 0.0
+meanB = 0.0
+
+using Base.Threads
+for (index, z) in enumerate(zs)
+    result, minBOfZElement, maxBOfZElement, meanBOfZElement = calculateBin(planeZValue=z)
+    store(result; planeZValue=z)
+
+    global minB, maxB, meanB
+    minB = index == 1 ? minBOfZElement : min(minB, minBOfZElement)
+    maxB = index == 1 ? maxBOfZElement : max(maxB, maxBOfZElement)
+    meanB = index == 1 ? meanBOfZElement : mean((meanB, meanBOfZElement))
+
+    println("min B of z elment under $(round(z/d, sigdigits=2))d is: $(minB*1e3) [mT]")
+    println("max B of z elment under $(round(z/d, sigdigits=2))d is: $(maxB*1e3) [mT]")
+    println("Magnetic Field Variance Rate: $( (maxB-minB)/meanB*100 )%")
 end
-map(sampleYIntervals) do value
-    write(fileYPoints, "$(round(value, sigdigits=4))\n")
-end
-
-
-map([fileX, fileY, fileZ, fileXPoints, fileYPoints]) do file
-    close(file)
-end
-
-
-# MARK: - Plots

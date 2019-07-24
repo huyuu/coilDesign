@@ -11,7 +11,9 @@ import pandas as pd
 preferredZ = 1.8
 I = 1.0
 N = 1
-dirName = f'I={I}_N={N}'
+h = 0.2
+l = 0.2
+dirName = f'I={I}_N={N}_h={h}_l={l}'
 
 
 # Functions
