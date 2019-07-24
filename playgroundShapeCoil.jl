@@ -12,14 +12,14 @@ const R = h
 # Variables
 
 const sourceIntervals = 500  # per part
-const sampleIntervals = 1000
-const zs = ( 0.0, 0.2d, 0.4d, 0.6d )
+const sampleIntervals = 500
+const zs = ( 0.0, 0.05d, 0.1d, 0.15d, 0.2d )
 
-const sampleXHalfRange = 0.3l
+const sampleXHalfRange = 0.1l
 const sampleXSpacing = 2*sampleXHalfRange/sampleIntervals
 const sampleXIntervals = [ -sampleXHalfRange + sampleXSpacing*i for i=1:sampleIntervals-1 ]
 
-const sampleYHalfRange = 0.3h
+const sampleYHalfRange = 0.1h
 const sampleYSpacing = 2*sampleYHalfRange/sampleIntervals
 const sampleYIntervals = [ -sampleYHalfRange + sampleYSpacing*i for i=1:sampleIntervals-1 ]
 
@@ -211,14 +211,14 @@ meanB = 0.0
 using Base.Threads
 for (index, z) in enumerate(zs)
     result, minBOfZElement, maxBOfZElement, meanBOfZElement = calculateBin(planeZValue=z)
-    store(result; planeZValue=z)
+    # store(result; planeZValue=z)
 
     global minB, maxB, meanB
     minB = index == 1 ? minBOfZElement : min(minB, minBOfZElement)
     maxB = index == 1 ? maxBOfZElement : max(maxB, maxBOfZElement)
     meanB = index == 1 ? meanBOfZElement : mean((meanB, meanBOfZElement))
-
+    println("At 2h = $(2h), 2d = $(2d), 2l = $(2l):")
     println("min B of z elment under $(round(z/d, sigdigits=2))d is: $(minB*1e3) [mT]")
     println("max B of z elment under $(round(z/d, sigdigits=2))d is: $(maxB*1e3) [mT]")
-    println("Magnetic Field Variance Rate: $( (maxB-minB)/meanB*100 )%")
+    println("Magnetic Field Variance Rate: $( (maxB-minB)/meanB*100 )%\n")
 end
