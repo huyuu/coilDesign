@@ -8,7 +8,7 @@ import pandas as pd
 
 # Variables
 
-preferredZ = 0.1
+preferredZ = 0.0
 I = 100.0
 N = 500
 d = 1.0  # d=1.0h
@@ -45,7 +45,7 @@ ax = pl.axes(projection='3d')
 ax.set_xlabel('X Distance [cm]', fontsize=22, labelpad=25)
 ax.set_ylabel('Y Distance [cm]', fontsize=22, labelpad=25)
 ax.set_zlabel('Magnetic Field B [mT]', fontsize=22, labelpad=25)
-ax.set_title(f'At z = {preferredZ}d', fontsize=26)
+ax.set_title(f'At z = {preferredZ}d; d = {d}h', fontsize=26)
 ax.tick_params(labelsize=16)
 
 ax.plot_surface(xSamplePoints.values, ySamplePoints.values.reshape(1, len(ySamplePoints)), zElementsOfB.values, rstride=20, cstride=20, cmap='Reds')

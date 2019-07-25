@@ -5,7 +5,7 @@ const I = 100  # 1[A]
 const N = 500
 const h = 0.05  # 5cm
 const l = 0.10  # 10cm
-const d = 0.5h  # 5cm
+const d = 0.6h  # 5cm
 const R = h
 
 
@@ -13,7 +13,7 @@ const R = h
 
 const sourceIntervals = 500  # per part
 const sampleIntervals = 500
-const zs = ( 0.0, 0.1d, 0.2d )
+const zs = ( 0.0, 0.1d, 1/6*d )
 
 const sampleXHalfRange = 0.1l
 const sampleXSpacing = 2*sampleXHalfRange/sampleIntervals
@@ -167,7 +167,13 @@ end
 
 function store(result::Array{Point, 2}; planeZValue::Float64)
     fileX, fileY, fileZ = map(["x", "y", "z"]) do var
-        open("$(dirName)/$(var)ElementsOfBAtZ=$(round(planeZValue/d, sigdigits=2)).csv", "w")
+        try
+            open("$(dirName)/$(var)ElementsOfBAtZ=$(round(planeZValue/d, sigdigits=2)).csv", "w")
+        catch errorStatement
+            run(`mkdir $dirName`)
+        finally
+            open("$(dirName)/$(var)ElementsOfBAtZ=$(round(planeZValue/d, sigdigits=2)).csv", "w")
+        end
     end
     fileXPoints, fileYPoints = map(('x', 'y')) do var
         open("$(dirName)/$(var)SamplePointsAtZ=$(round(planeZValue/d, sigdigits=2)).csv", "w")
@@ -200,20 +206,16 @@ function store(result::Array{Point, 2}; planeZValue::Float64)
 end
 
 
-
 # Main
 
 minB = 1.0
 maxB = 0.0
 meanB = 0.0
+dirName = "I=$(round(I, sigdigits=2))_N=$(round(Int, N))_d=$(round(d/h, sigdigits=2))h_y=$(round(sampleYHalfRange/h, sigdigits=2))h_x=$(round(sampleXHalfRange/l, sigdigits=2))l"
 
 using Base.Threads
-dirName = "I=$(round(I, sigdigits=2))_N=$(round(Int, N))_d=$(round(d/h, sigdigits=2))h_y=$(round(sampleYHalfRange/h, sigdigits=2))h_x=$(round(sampleXHalfRange/l, sigdigits=2))l"
-run(`mkdir $dirName`)
-
 for (index, z) in enumerate(zs)
     result, minBOfZElement, maxBOfZElement, meanBOfZElement = calculateBin(planeZValue=z)
-    store(result; planeZValue=z)
 
     global minB, maxB, meanB
     minB = index == 1 ? minBOfZElement : min(minB, minBOfZElement)
@@ -225,4 +227,6 @@ for (index, z) in enumerate(zs)
     println("min B of z elment under $(round(z/d, sigdigits=2))d is: $(minB*1e3) [mT]")
     println("max B of z elment under $(round(z/d, sigdigits=2))d is: $(maxB*1e3) [mT]")
     println("Magnetic Field Variance Rate: $( (maxB-minB)/meanB*100 )%\n")
+
+    store(result; planeZValue=z)
 end
