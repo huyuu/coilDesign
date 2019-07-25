@@ -12,7 +12,10 @@ const R = h
 
 const sourceIntervals = 100  # per part
 const sampleIntervals = 500
-const ds = ( 0.001i*h for i=560:620 )
+const lower = 0.5775
+const upper = 0.5825
+const spacing = 0.0001
+const ds = ( i*h for i=lower:spacing:upper )
 const z = 0.1h
 
 const sampleXHalfRange = 0.1l
@@ -161,75 +164,32 @@ function calculateBin(;planeZValue::Float64, distance::Float64)
 end
 
 
-function storeAllResults(resultIn0Plane::Array{Point, 2}, resultInUpperPlane::Array{Point, 2}; index::Int, planeZValue::Float64, distance::Float64, maxB::Float64, minB::Float64, meanB::Float64, variationRate::Float64)
-    # open files
-    fileX, fileY, fileZ = map(["x", "y", "z"]) do var
-        try
-            open("$(dirName)/$(var)ElementsOfBWhenD=$(round(distance/h, sigdigits=3))h.csv", "w")
-        catch errorStatement
-            run(`mkdir $dirName`)
-        finally
-            open("$(dirName)/$(var)ElementsOfBWhenD=$(round(distance/h, sigdigits=3))h.csv", "w")
-        end
-    end
-    fileXPoints, fileYPoints = map(('x', 'y')) do var
-        open("$(dirName)/$(var)SamplePointsWhenD=$(round(distance/h, sigdigits=3))h.csv", "w")
-    end
-    fileVariationRate = try
-        open("$(dirName)/variantionRateUnderVariousD.csv", "a")
+function openWithNewDirIfNeeded(;dirName::String, fileName::String, modes::String)
+    isSuccessful = true
+    file = try
+        open("$(dirName)/$fileName", modes)
     catch
-        run(`touch $dirName/variantionRateUnderVariousD.csv`)
-    finally
-        open("$(dirName)/variantionRateUnderVariousD.csv", "a")
+        run(`mkdir $dirName`)
+        run(`touch $dirName/$fileName`)
+        isSuccessful = false
     end
 
-    # write results to files
-    for (xIndex, xValue) in enumerate(sampleXIntervals)
-        for (yIndex, yValue) in enumerate(sampleYIntervals)
-            point = result[xIndex, yIndex]
-            map( zip((fileX, fileY, fileZ), (point.x, point.y, point.z)) ) do (file, value)
-                write(file, "$(round(value, sigdigits=12)),")
-            end
-        end
-        map((fileX, fileY, fileZ)) do file
-            write(file, "\n")
-        end
+    if isSuccessful == false
+        file = open("$(dirName)/$fileName", modes)
     end
-
-    # write sample points
-    map(sampleXIntervals) do value
-        write(fileXPoints, "$(round(value, sigdigits=4))\n")
-    end
-    map(sampleYIntervals) do value
-        write(fileYPoints, "$(round(value, sigdigits=4))\n")
-    end
-    # write variation rate
-    index == 1 ? write(fileVariationRate, "d(h),variationRate,meanB[mT]\n") : nothing
-    write(fileVariationRate, "$(round(distance/h, sigdigits=4)),$(round(variationRate, sigdigits=5)),$(round(meanB*1e3, sigdigits=4))\n")
-
-    # close files
-    map([fileX, fileY, fileZ, fileXPoints, fileYPoints, fileVariationRate]) do file
-        close(file)
-    end
+    return file
 end
 
 
 function storeVariationRatesOnly(; index::Int, distance::Float64, meanB::Float64, variationRate::Float64)
-    file = try
-        open("$(dirName)/variantionRateUnderVariousD.csv", "a")
-    catch errorStatement
-        run(`mkdir $dirName`)
-        run(`touch $dirName/variantionRateUnderVariousD.csv`)
-    finally
-        open("$(dirName)/variantionRateUnderVariousD.csv", "a")
-    end
+    fileName = "variantionRateUnderVariousDFrom$(lower)To$(upper).csv"
+    file = openWithNewDirIfNeeded(;dirName=dirName, fileName=fileName, modes="a")
 
     # write variation rate
     if index == 1
         write(file, "d(h),variationRate,meanB[mT]\n")
     end
     write(file, "$(round(distance/h, sigdigits=4)),$(round(variationRate, sigdigits=5)),$(round(meanB*1e3, sigdigits=4))\n")
-
     close(file)
 end
 
@@ -250,8 +210,8 @@ for (index, d) in enumerate(ds)
 
     println("Current Loop Area at 2h = $(2h*100)cm, 2d = $(round(2d*100, sigdigits=3))cm, 2l = $(2l*100)cm; ")
     println("Conducting Area at x = $(round(-sampleXHalfRange/l, sigdigits=2))l~$(round(sampleXHalfRange/l, sigdigits=2))l, y = $(round(sampleYHalfRange/h, sigdigits=2))h~$(round(sampleYHalfRange/h, sigdigits=2))h; samplePoint=$(sampleIntervals):" )
-    println("min B of z elment under d = $(round(d/h, sigdigits=4))h is: $(minB*1e3) [mT]")
-    println("max B of z elment under d = $(round(d/h, sigdigits=4))h is: $(maxB*1e3) [mT]")
+    println("min B of z elment when d = $(round(d/h, sigdigits=4))h is: $(minB*1e3) [mT]")
+    println("max B of z elment when d = $(round(d/h, sigdigits=4))h is: $(maxB*1e3) [mT]")
     println("Magnetic Field Variance Rate: $variationRate%\n")
 
     storeVariationRatesOnly(; index=index, distance=d, meanB=meanB, variationRate=variationRate)
