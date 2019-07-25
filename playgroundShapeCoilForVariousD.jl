@@ -10,9 +10,9 @@ const R = h
 
 # Variables
 
-const sourceIntervals = 500  # per part
+const sourceIntervals = 100  # per part
 const sampleIntervals = 500
-const ds = ( 0.01i*h for i=1:100 )
+const ds = ( 0.001i*h for i=560:620 )
 const z = 0.1h
 
 const sampleXHalfRange = 0.1l
@@ -161,7 +161,7 @@ function calculateBin(;planeZValue::Float64, distance::Float64)
 end
 
 
-function store(result::Array{Point, 2}; index::Int, planeZValue::Float64, distance::Float64, maxB::Float64, minB::Float64, meanB::Float64, variationRate::Float64)
+function storeAllResults(resultIn0Plane::Array{Point, 2}, resultInUpperPlane::Array{Point, 2}; index::Int, planeZValue::Float64, distance::Float64, maxB::Float64, minB::Float64, meanB::Float64, variationRate::Float64)
     # open files
     fileX, fileY, fileZ = map(["x", "y", "z"]) do var
         try
@@ -214,21 +214,38 @@ function store(result::Array{Point, 2}; index::Int, planeZValue::Float64, distan
 end
 
 
+function storeVariationRatesOnly(; index::Int, distance::Float64, meanB::Float64, variationRate::Float64)
+    file = try
+        open("$(dirName)/variantionRateUnderVariousD.csv", "a")
+    catch errorStatement
+        run(`mkdir $dirName`)
+        run(`touch $dirName/variantionRateUnderVariousD.csv`)
+    finally
+        open("$(dirName)/variantionRateUnderVariousD.csv", "a")
+    end
+
+    # write variation rate
+    if index == 1
+        write(file, "d(h),variationRate,meanB[mT]\n")
+    end
+    write(file, "$(round(distance/h, sigdigits=4)),$(round(variationRate, sigdigits=5)),$(round(meanB*1e3, sigdigits=4))\n")
+
+    close(file)
+end
+
+
 # Main
 
-minB = 1.0
-maxB = 0.0
-meanB = 0.0
-dirName = "I=$(round(I, sigdigits=2))_N=$(round(Int, N))_z=$(round(z/h, sigdigits=2))h_y=$(round(sampleYHalfRange/h, sigdigits=2))h_x=$(round(sampleXHalfRange/l, sigdigits=2))l"
+const dirName = "I=$(round(I, sigdigits=2))_N=$(round(Int, N))_z=$(round(z/h, sigdigits=2))h_y=$(round(sampleYHalfRange/h, sigdigits=2))h_x=$(round(sampleXHalfRange/l, sigdigits=2))l"
 
 using Base.Threads
 for (index, d) in enumerate(ds)
-    result, minBOfZElement, maxBOfZElement, meanBOfZElement = calculateBin(planeZValue=z, distance=d)
+    resultIn0Plane, minBOfZElementIn0Plane, maxBOfZElementIn0Plane, meanBOfZElementIn0Plane = calculateBin(planeZValue=0.0, distance=d)
+    resultInUpperPlane, minBOfZElementInUpperPlane, maxBOfZElementInUpperPlane, meanBOfZElementInUpperPlane = calculateBin(planeZValue=z, distance=d)
 
-    global minB, maxB, meanB
-    minB = index == 1 ? minBOfZElement : min(minB, minBOfZElement)
-    maxB = index == 1 ? maxBOfZElement : max(maxB, maxBOfZElement)
-    meanB = index == 1 ? meanBOfZElement : mean((meanB, meanBOfZElement))
+    minB = min(minBOfZElementIn0Plane, minBOfZElementInUpperPlane)
+    maxB = max(maxBOfZElementIn0Plane, maxBOfZElementInUpperPlane)
+    meanB = mean((meanBOfZElementIn0Plane, meanBOfZElementInUpperPlane))
     variationRate = (maxB-minB)/meanB*100
 
     println("Current Loop Area at 2h = $(2h*100)cm, 2d = $(round(2d*100, sigdigits=3))cm, 2l = $(2l*100)cm; ")
@@ -237,5 +254,5 @@ for (index, d) in enumerate(ds)
     println("max B of z elment under d = $(round(d/h, sigdigits=4))h is: $(maxB*1e3) [mT]")
     println("Magnetic Field Variance Rate: $variationRate%\n")
 
-    store(result; index=index, planeZValue=z, distance=d, maxB=maxB, minB=minB, meanB=meanB, variationRate=variationRate)
+    storeVariationRatesOnly(; index=index, distance=d, meanB=meanB, variationRate=variationRate)
 end
