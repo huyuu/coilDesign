@@ -14,16 +14,16 @@ z = 0.1
 y = 0.1  # y=0.1h
 x = 0.1  # x=0.1l
 
-lower = 0.56
-upper = 0.62
+lower = 0.1
+upper = 2.0
 dirName = f'I={I}_N={N}_z={z}h_y={y}h_x={x}l'
-fileName = f"variantionRateUnderVariousDFrom{lower}To{upper}.csv"
+fileName = f"variantionRateUnderVariousDFrom{lower}To{upper}"
 
 
 # Functions
 
 def readVariationRate(fileName):
-    return pd.read_csv(f'{dirName}/{fileName}')
+    return pd.read_csv(f'{dirName}/{fileName}.csv')
 
 
 # Main
@@ -31,18 +31,18 @@ def readVariationRate(fileName):
 data = readVariationRate(fileName)
 distanceArray = data["d(h)"].values
 variationRateArray = data["variationRate"].values
+meanBArray = data['meanB[mT]'].values
 
-pl.plot(distanceArray, variationRateArray)
-pl.xlabel('Distance [h]')
-pl.ylabel('Variation Rate [%]')
+pl.plot(distanceArray, variationRateArray, 'o', markersize=8)
+pl.xlabel('Distance [h]', fontsize=40)
+pl.ylabel('Variation Rate [%]', fontsize=40)
+pl.title('Magnetic Field Variation Rate within (1cm)^2 x length Cube', fontsize=44)
+pl.tick_params(labelsize=28)
 pl.show()
-# fig = pl.figure()
-# ax = pl.axes(projection='3d')
-# ax.set_xlabel('X Distance [cm]', fontsize=22, labelpad=25)
-# ax.set_ylabel('Y Distance [cm]', fontsize=22, labelpad=25)
-# ax.set_zlabel('Magnetic Field B [mT]', fontsize=22, labelpad=25)
-# ax.set_title(f'At z = {preferredZ}d; d = {d}h', fontsize=26)
-# ax.tick_params(labelsize=16)
-#
-# ax.plot_surface(xSamplePoints.values, ySamplePoints.values.reshape(1, len(ySamplePoints)), zElementsOfB.values, rstride=20, cstride=20, cmap='Reds')
-# pl.show()
+
+pl.plot(distanceArray, meanBArray, 'o', markersize=8)
+pl.xlabel('Distance [h]', fontsize=40)
+pl.ylabel('Average B [mT]', fontsize=40)
+pl.title('Average Magnetic Field B within (1cm)^2 x length Cube', fontsize=44)
+pl.tick_params(labelsize=28)
+pl.show()

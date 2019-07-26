@@ -11,10 +11,10 @@ const R = h
 # Variables
 
 const sourceIntervals = 100  # per part
-const sampleIntervals = 500
-const lower = 0.5775
-const upper = 0.5825
-const spacing = 0.0001
+const sampleIntervals = 100
+const lower = 0.1
+const upper = 2.0
+const spacing = 0.01
 const ds = ( i*h for i=lower:spacing:upper )
 const z = 0.1h
 
@@ -182,30 +182,29 @@ end
 
 
 function storeVariationRatesOnly(; index::Int, distance::Float64, meanB::Float64, variationRate::Float64)
-    fileName = "variantionRateUnderVariousDFrom$(lower)To$(upper).csv"
-    file = openWithNewDirIfNeeded(;dirName=dirName, fileName=fileName, modes="a")
-
+    global file
     # write variation rate
     if index == 1
         write(file, "d(h),variationRate,meanB[mT]\n")
     end
     write(file, "$(round(distance/h, sigdigits=4)),$(round(variationRate, sigdigits=5)),$(round(meanB*1e3, sigdigits=4))\n")
-    close(file)
 end
 
 
 # Main
 
 const dirName = "I=$(round(I, sigdigits=2))_N=$(round(Int, N))_z=$(round(z/h, sigdigits=2))h_y=$(round(sampleYHalfRange/h, sigdigits=2))h_x=$(round(sampleXHalfRange/l, sigdigits=2))l"
+const fileName = "variantionRateUnderVariousDFrom$(lower)To$(upper).csv"
+const file = openWithNewDirIfNeeded(;dirName=dirName, fileName=fileName, modes="a")
 
-using Base.Threads
 for (index, d) in enumerate(ds)
     resultIn0Plane, minBOfZElementIn0Plane, maxBOfZElementIn0Plane, meanBOfZElementIn0Plane = calculateBin(planeZValue=0.0, distance=d)
+    resultInMiddlePlane, minBOfZElementInMiddlePlane, maxBOfZElementInMiddlePlane, meanBOfZElementInMiddlePlane = calculateBin(planeZValue=z/2, distance=d)
     resultInUpperPlane, minBOfZElementInUpperPlane, maxBOfZElementInUpperPlane, meanBOfZElementInUpperPlane = calculateBin(planeZValue=z, distance=d)
 
-    minB = min(minBOfZElementIn0Plane, minBOfZElementInUpperPlane)
-    maxB = max(maxBOfZElementIn0Plane, maxBOfZElementInUpperPlane)
-    meanB = mean((meanBOfZElementIn0Plane, meanBOfZElementInUpperPlane))
+    minB = min(minBOfZElementIn0Plane, minBOfZElementInUpperPlane, minBOfZElementInMiddlePlane)
+    maxB = max(maxBOfZElementIn0Plane, maxBOfZElementInUpperPlane, maxBOfZElementInMiddlePlane)
+    meanB = mean((meanBOfZElementIn0Plane, meanBOfZElementInUpperPlane, meanBOfZElementInMiddlePlane))
     variationRate = (maxB-minB)/meanB*100
 
     println("Current Loop Area at 2h = $(2h*100)cm, 2d = $(round(2d*100, sigdigits=3))cm, 2l = $(2l*100)cm; ")
@@ -216,3 +215,5 @@ for (index, d) in enumerate(ds)
 
     storeVariationRatesOnly(; index=index, distance=d, meanB=meanB, variationRate=variationRate)
 end
+
+close(file)
