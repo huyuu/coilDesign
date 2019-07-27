@@ -209,9 +209,10 @@ for (index, sampleXHalfRange) in enumerate(sampleXHalfRanges)
 
     println("Current Loop Area at 2h = $(2h*100)cm, 2d = $(round(2d*100, sigdigits=3))cm, 2l = $(2l*100)cm; ")
     println("Conducting Area at x = $(round(-sampleXHalfRange/l, sigdigits=4))l~$(round(sampleXHalfRange/l, sigdigits=2))l, y = $(round(sampleYHalfRange/h, sigdigits=2))h~$(round(sampleYHalfRange/h, sigdigits=2))h; samplePoint=$(sampleIntervals):" )
-    println("min B of z elment when length = $(round(sampleXHalfRange/l, sigdigits=4))h is: $(minB*1e3) [mT]")
-    println("max B of z elment when length = $(round(sampleXHalfRange/l, sigdigits=4))h is: $(maxB*1e3) [mT]")
+    println("min B of z elment when length = $(round(sampleXHalfRange/l, sigdigits=4))l is: $(minB*1e3) [mT]")
+    println("max B of z elment when length = $(round(sampleXHalfRange/l, sigdigits=4))l is: $(maxB*1e3) [mT]")
     println("Magnetic Field Variance Rate: $variationRate%\n")
+    println("$(round(index/len(sampleXHalfRanges), sigdigits=3))% completed...")
 
     global file
     storeVariationRatesOnly(file; index=index, length=sampleXHalfRange, meanB=meanB, variationRate=variationRate)
