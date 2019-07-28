@@ -165,24 +165,6 @@ end
 
 
 using Statistics
-function calculateBin(;planeZValue::Float64, sampleXIntervals::Array{Float64, 1})
-    result = map(zeros((samplePoints, samplePoints))) do x
-        Point(x, x, x)
-    end
-
-    for (xIndex, xValue) in enumerate(sampleXIntervals), (yIndex, yValue) in enumerate(sampleYIntervals)
-        resultInArray = myu0/(4pi)*(N*I) .* ( BAtPointFromLower(Point(xValue, yValue, planeZValue)) .+ BAtPointFromUpper(Point(xValue, yValue, planeZValue)) )
-        result[xIndex, yIndex] = Point(resultInArray)
-    end
-
-    zValues = [ point.z for point in result ]
-    minBOfZElement = min(zValues...)
-    maxBOfZElement = max(zValues...)
-    meanBOfZElement = mean(zValues)
-    return (result, minBOfZElement, maxBOfZElement, meanBOfZElement)
-end
-
-
 function calculateVariationRateAndMeanBWhen(X0; d::Float64, l::Float64)::Tuple{Float64, Float64}
     result = map(zeros((samplePoints, samplePoints))) do x
         Point(x, x, x)
@@ -208,6 +190,48 @@ function calculateVariationRateAndMeanBWhen(X0; d::Float64, l::Float64)::Tuple{F
     variationRate = (maxBOfZElement-minBOfZElement)/meanBOfZElement
     return variationRate, meanBOfZElement
 end
+
+
+function solveByInterpolation(f::Function; xLower::Float64, xUpper::Float64)::Tuple{Float64, Float64, Float64}
+    standard = 0.0
+    signAt = x -> sign(f(x)-standard)
+    xLowerSign= signAt(xLower)
+    xUpperSign = signAt(xUpper)
+    xMiddleSign = signAt((xUpper+xLower)/2)
+
+    while true
+        if xLowerSign == xUpperSign == xMiddleSign
+            return (standard, 1.0, 1.0)  # no solution
+        elseif isCloseEnough(xUpperSign, standard)
+            return (xUpper, f(xUpper)...)
+        elseif isCloseEnough(xMiddleSign, standard)
+            return (xMiddle, f(xMiddle)...)
+        elseif isCloseEnough(xLowerSign, standard)
+            return (xLower, f(xLower)...)
+
+        elseif xLowerSign == xMiddleSign != xUpperSign
+            xLower = xMiddle
+            xLowerSign = signAt(xLower)
+            xMiddle = (xMiddle+xUpper)/2
+            xMiddleSign = signAt( xMiddle )
+            continue
+        elseif xLowerSign != xMiddleSign == xUpperSign
+            xUpper = xMiddle
+            xUpperSign = signAt(xUpperSign)
+            xMiddle = (xLower+xMiddle)/2
+            xMiddleSign = signAt(xMiddle)
+            continue
+        else
+            error("Here")
+        end
+    end
+end
+
+
+function isCloseEnough(a::Number, b::Float64;, ε::Float64=ε)
+    abs(a - b) < ε
+end
+
 
 
 function openWithNewDirIfNeeded(;dirName::String, fileName::String, modes::String)
@@ -292,22 +316,23 @@ end
 
 # Main
 const files = openFiles()
+const ε = 0.01 * 0.1  # error = 10%
 
 for (dIndex, dValue) in enumerate(ds), (lIndex, lValue) in enumerate(ls)
-    X0Reservations = LinRange(lValue, 0, samplePoints)
-    maxX0::Float64 = lValue
-    meanB::Float64 = 0.0
-
-    @time for X0 in X0Reservations
-        maxX0 = X0
-        variationRate::Float64, meanB = calculateVariationRateAndMeanBWhen(X0; d=dValue, l=lValue)
-        if variationRate < 0.01
-            break
-        end
-    end
+    X0::Float64, variationRate::Float64, meanB::Float64 = @time solveByInterpolation(f=(X0, dValue, lValue) -> calculateVariationRateAndMeanBWhen(X0; d=dValue, l=lValue); xLower=0.0, xUpper=lValue)
+    #
+    # @time while !isCloseEnough(X0, 0.0; ε=ε)
+    #     maxX0 = X0
+    #     variationRate, meanB = calculateVariationRateAndMeanBWhen(X0; d=dValue, l=lValue)
+    #     if isCloseEnough(variationRate, 0.01; ε=ε)
+    #         break
+    #     else
+    #         X0 = updateX0(old=X0, )
+    #     end
+    # end
 
     println("(d:$(round(dValue/h, sigdigits=4))h, l:$(round(lValue/h, sigdigits=4))h): maxX0 = $(round(maxX0/h, sigdigits=6))h")
-    storeX0AndMeanBs(files; shouldEndLine=lIndex==length(ls), X0=maxX0, meanB=meanB)
+    storeX0AndMeanBs(files; shouldEndLine=lIndex==length(ls), X0=X0, meanB=meanB)
 end
 storeSamplePoints(files)
 
