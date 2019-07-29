@@ -1,32 +1,32 @@
 # Constants
 
-const myu0 = 4pi*1e-7
-const I = 100  # 1[A]
-const N = 500
-const h = 0.05  # 5cm
-const R = h
-const Y0 = 0.1h
-const Z0 = 0.1h
+@everywhere const myu0 = 4pi*1e-7
+@everywhere const I = 50  # 1[A]
+@everywhere const N = 50
+@everywhere const h = 0.05  # 5cm
+@everywhere const R = h
+@everywhere const Y0 = 0.1h
+@everywhere const Z0 = 0.1h
 
 
 # Variables
 
-"Intervals into which a line is cut, ex: c1. Should not be too small otherwise divergence condition could be raised."
-const sourceIntervals = 50
-const sampleIntervals = 50
-const samplePoints = sampleIntervals+1
-"Points for the outer most loop, therefore should not be too much."
-const axisPoints = 50
+# Intervals into which a line is cut, ex: c1. Should not be too small otherwise divergence condition could be raised."
+@everywhere const sourceIntervals = 50
+@everywhere const sampleIntervals = 50
+@everywhere const samplePoints = sampleIntervals+1
+# Points for the outer most loop, therefore should not be too much."
+@everywhere const axisPoints = 50
 
 
-const ds = let
+@everywhere const ds = let
     lowerCoeff = 0.1
     upperCoeff = 2.0
     n::Int = axisPoints
     ( i*h for i=range(lowerCoeff, stop=upperCoeff, length=n) )
 end
 
-const ls = let
+@everywhere const ls = let
     lowerCoeff = 1.0
     upperCoeff = 5.0
     n::Int = axisPoints
@@ -42,22 +42,15 @@ end
 
 # Models
 
-struct Point
+@everywhere struct Point
     x::Float64
     y::Float64
     z::Float64
 end
-Point(array::Array{Float64, 1}) = Point(array[1], array[2], array[3])
-
-struct Files
-    d::IOStream
-    l::IOStream
-    X0s::IOStream
-    meanBs::IOStream
-end
+@everywhere Point(array::Array{Float64, 1}) = Point(array[1], array[2], array[3])
 
 
-function numericalIntegrateOf(f::Function; upperLimit::Float64, lowerLimit::Float64, d::Float64, l::Float64, n::Integer, point::Point)::Array{Float64, 1}
+@everywhere function numericalIntegrateOf(f::Function; upperLimit::Float64, lowerLimit::Float64, d::Float64, l::Float64, n::Integer, point::Point)::Array{Float64, 1}
     sumOfIntervals = let
         intervals = [ lowerLimit + k*(upperLimit-lowerLimit)/n for k in 1:n-1 ]
         vector = [0.0; 0.0; 0.0]
@@ -74,7 +67,7 @@ function numericalIntegrateOf(f::Function; upperLimit::Float64, lowerLimit::Floa
 end
 
 
-function c1(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function c1(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
     xVector = 0
     yVector = -(point.z+d)
     zVector = (point.y+h)
@@ -83,7 +76,7 @@ function c1(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64,
 end
 
 
-function c2(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function c2(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
     xVector = 0.0
     yVector = (point.z+d)
     zVector = -(point.y-h)
@@ -92,7 +85,7 @@ function c2(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64,
 end
 
 
-function c3(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function c3(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
     xVector = (point.z+d)R*cos(var)
     yVector = (point.z+d)R*sin(var)
     zVector = -R*( (point.y-R*sin(var))sin(var) + (point.x-l-R*cos(var))cos(var) )
@@ -101,7 +94,7 @@ function c3(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64,
 end
 
 
-function c4(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function c4(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
     xVector = (point.z+d)R*cos(var)
     yVector = (point.z+d)R*sin(var)
     zVector = -R*( (point.y-R*sin(var))sin(var) + (point.x+l-R*cos(var))cos(var) )
@@ -110,7 +103,7 @@ function c4(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64,
 end
 
 
-function c5(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function c5(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
     xVector = 0
     yVector = -(point.z-d)
     zVector = (point.y+h)
@@ -119,7 +112,7 @@ function c5(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64,
 end
 
 
-function c6(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function c6(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
     xVector = 0.0
     yVector = (point.z-d)
     zVector = -(point.y-h)
@@ -128,7 +121,7 @@ function c6(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64,
 end
 
 
-function c7(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function c7(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
     xVector = (point.z-d)R*cos(var)
     yVector = (point.z-d)R*sin(var)
     zVector = -R*( (point.y-R*sin(var))sin(var) + (point.x-l-R*cos(var))cos(var) )
@@ -137,7 +130,7 @@ function c7(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64,
 end
 
 
-function c8(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function c8(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
     xVector = (point.z-d)R*cos(var)
     yVector = (point.z-d)R*sin(var)
     zVector = -R*( (point.y-R*sin(var))sin(var) + (point.x+l-R*cos(var))cos(var) )
@@ -146,7 +139,7 @@ function c8(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64,
 end
 
 
-function BAtPointFromLower(point::Point; d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function BAtPointFromLower(point::Point; d::Float64, l::Float64)::Array{Float64, 1}
     result::Array{Float64, 1} = numericalIntegrateOf(c1; lowerLimit=-l, upperLimit=l, d=d, l=l, n=sourceIntervals, point=point)
     result += numericalIntegrateOf(c2; lowerLimit=-l, upperLimit=l, d=d, l=l, n=sourceIntervals, point=point)
     result += numericalIntegrateOf(c3; lowerLimit=-pi/2, upperLimit=pi/2, d=d, l=l, n=sourceIntervals, point=point)
@@ -155,7 +148,7 @@ function BAtPointFromLower(point::Point; d::Float64, l::Float64)::Array{Float64,
 end
 
 
-function BAtPointFromUpper(point::Point; d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function BAtPointFromUpper(point::Point; d::Float64, l::Float64)::Array{Float64, 1}
     result::Array{Float64, 1} = numericalIntegrateOf(c5; lowerLimit=-l, upperLimit=l, d=d, l=l, n=sourceIntervals, point=point)
     result += numericalIntegrateOf(c6; lowerLimit=-l, upperLimit=l, d=d, l=l, n=sourceIntervals, point=point)
     result += numericalIntegrateOf(c7; lowerLimit=-pi/2, upperLimit=pi/2, d=d, l=l, n=sourceIntervals, point=point)
@@ -165,7 +158,7 @@ end
 
 
 using Statistics
-function calculateVariationRateAndMeanBWhen(X0; d::Float64, l::Float64)::Tuple{Float64, Float64}
+function calculateVariationRateAndMeanBWhen(X0; d::Float64, l::Float64)::Float64
     result = map(zeros((samplePoints, samplePoints))) do x
         Point(x, x, x)
     end
@@ -180,46 +173,53 @@ function calculateVariationRateAndMeanBWhen(X0; d::Float64, l::Float64)::Tuple{F
     meanBOfZElement::Float64 = 0.0
 
     for (xIndex, xValue) in enumerate(xSamplePoints), (yIndex, yValue) in enumerate(ySamplePoints), (zIndex, zValue) in enumerate(zSamplePoints)
-        resultInArray::Array{Float64, 1} = myu0/(4pi)*(N*I) .* ( BAtPointFromLower(Point(xValue, yValue, zValue); d=d, l=l) .+ BAtPointFromUpper(Point(xValue, yValue, zValue); d=d, l=l) )
+        resultFromUpper = @spawn BAtPointFromUpper(Point(xValue, yValue, zValue); d=d, l=l)
+        resultFromLower = @spawn BAtPointFromLower(Point(xValue, yValue, zValue); d=d, l=l)
+        resultInArray::Array{Float64, 1} = myu0/(4pi)*(N*I) .* ( fetch(resultFromLower) .+ fetch(resultFromUpper) )
+        # resultInArray::Array{Float64, 1} = myu0/(4pi)*(N*I) .* ( BAtPointFromLower(Point(xValue, yValue, zValue); d=d, l=l) .+ BAtPointFromUpper(Point(xValue, yValue, zValue); d=d, l=l) )
         zElementOfB = resultInArray[3]
         minBOfZElement = min(minBOfZElement, zElementOfB)
         maxBOfZElement = max(maxBOfZElement, zElementOfB)
         meanBOfZElement += zElementOfB/allPoints
     end
 
-    variationRate = (maxBOfZElement-minBOfZElement)/meanBOfZElement
-    return variationRate, meanBOfZElement
+    # variationRate = (maxBOfZElement-minBOfZElement)/meanBOfZElement
+    return meanBOfZElement
 end
 
 
-function solveByInterpolation(f::Function; xLower::Float64, xUpper::Float64)::Tuple{Float64, Float64, Float64}
+function solveByInterpolation(;xLower::Float64, xUpper::Float64, dValue::Float64, lValue::Float64)::Tuple{Float64, Float64}
     standard = 0.0
-    signAt = x -> sign(f(x)-standard)
-    xLowerSign= signAt(xLower)
-    xUpperSign = signAt(xUpper)
-    xMiddleSign = signAt((xUpper+xLower)/2)
+    signAndResultAt(x) = let
+        result = calculateVariationRateAndMeanBWhen(x; d=dValue, l=lValue)
+        signOfResult = sign(result-standard)
+        (signOfResult, result)
+    end
+    xLowerSign, xLowerResult = signAndResultAt(xLower)
+    xUpperSign, xUpperResult = signAndResultAt(xUpper)
+    xMiddleSign, xMiddleResult = signAndResultAt((xUpper+xLower)/2)
 
     while true
         if xLowerSign == xUpperSign == xMiddleSign
-            return (standard, 1.0, 1.0)  # no solution
+            return (standard, 0.0)  # no solution
         elseif isCloseEnough(xUpperSign, standard)
-            return (xUpper, f(xUpper)...)
+            return (xUpper, xUpperResult)
         elseif isCloseEnough(xMiddleSign, standard)
-            return (xMiddle, f(xMiddle)...)
+            return (xMiddle, xMiddleResult)
         elseif isCloseEnough(xLowerSign, standard)
-            return (xLower, f(xLower)...)
+            return (xLower, xLowerResult)
 
         elseif xLowerSign == xMiddleSign != xUpperSign
             xLower = xMiddle
-            xLowerSign = signAt(xLower)
+            xLowerSign, xLowerResult = signAndResultAt(xLower)
             xMiddle = (xMiddle+xUpper)/2
-            xMiddleSign = signAt( xMiddle )
+            xMiddleSign, xMiddleResult = signAndResultAt(xMiddle)
             continue
         elseif xLowerSign != xMiddleSign == xUpperSign
             xUpper = xMiddle
-            xUpperSign = signAt(xUpperSign)
+            xUpperSign, xUpperResult = signAndResultAt(xUpperSign)
             xMiddle = (xLower+xMiddle)/2
-            xMiddleSign = signAt(xMiddle)
+            xMiddleSign, xMiddleResult = signAndResultAt(xMiddle)
             continue
         else
             error("Here")
@@ -228,7 +228,7 @@ function solveByInterpolation(f::Function; xLower::Float64, xUpper::Float64)::Tu
 end
 
 
-function isCloseEnough(a::Number, b::Float64;, ε::Float64=ε)
+function isCloseEnough(a::Number, b::Float64; ε::Float64=ε)
     abs(a - b) < ε
 end
 
@@ -270,7 +270,7 @@ function myOpen(;fileName::String, modes::String="w", dirName::Union{String, Not
 end
 
 
-function openFiles()::Files
+function openFiles()::Dict{String, IOStream}
     dirName = "I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round(h*100, sigdigits=2))cm_Y0=Z0=$(round(Y0/h, sigdigits=2))h"
     dsArray = collect(ds)
     lsArray = collect(ls)
@@ -284,32 +284,32 @@ function openFiles()::Files
     fileX0s = myOpen(;fileName="maxX0s_D=$(dsLower)To$(dsUpper)_L=$(lsLower)To$(lsUpper).csv", dirName=dirName, withNewDirIfNeeded=true, csvHeader="maxX0(h)")
     fileMeanBs = myOpen(;fileName="meanBs_D=$(dsLower)To$(dsUpper)_L=$(lsLower)To$(lsUpper).csv", dirName=dirName, withNewDirIfNeeded=true, csvHeader="meanBs[mT]")
 
-    return Files(fileD, fileL, fileX0s, fileMeanBs)
+    return Dict("d"=>fileD, "l"=>fileL, "X0s"=>fileX0s, "meanBs"=>fileMeanBs)
 end
 
 
-function closeFiles(files::Files)
+function closeFiles(files::Dict{String, IOStream})
     map(values(files)) do file
         close(file)
     end
 end
 
 
-function storeX0AndMeanBs(files::Files; shouldEndLine::Bool, X0::Float64, meanB::Float64)
+function storeX0AndMeanBs(files::Dict{String, IOStream}; shouldEndLine::Bool, X0::Float64, meanB::Float64)
     if shouldEndLine
-        write(files.X0s, round(X0, sigdigits=5), "\n")
-        write(files.meanBs, round(meanB, sigdigits=5), "\n")
+        write(files["X0s"], round(X0, sigdigits=5), "\n")
+        write(files["meanBs"], round(meanB, sigdigits=5), "\n")
     else
-        write(files.X0s, round(X0, sigdigits=5), ",")
-        write(files.meanBs, round(meanB, sigdigits=5), ",")
+        write(files["X0s"], round(X0, sigdigits=5), ",")
+        write(files["meanBs"], round(meanB, sigdigits=5), ",")
     end
 end
 
 
-function storeSamplePoints(files::Files)
+function storeSamplePoints(files::Dict{String, IOStream})
     map(ds, ls) do d, l
-        write(files.d, round(d/h, sigdigits=4), "\n")
-        write(files.l, round(l/h, sigdigits=4), "\n")
+        write(files["d"], round(d/h, sigdigits=4), "\n")
+        write(files["l"], round(l/h, sigdigits=4), "\n")
     end
 end
 
@@ -319,21 +319,13 @@ const files = openFiles()
 const ε = 0.01 * 0.1  # error = 10%
 
 for (dIndex, dValue) in enumerate(ds), (lIndex, lValue) in enumerate(ls)
-    X0::Float64, variationRate::Float64, meanB::Float64 = @time solveByInterpolation(f=(X0, dValue, lValue) -> calculateVariationRateAndMeanBWhen(X0; d=dValue, l=lValue); xLower=0.0, xUpper=lValue)
-    #
-    # @time while !isCloseEnough(X0, 0.0; ε=ε)
-    #     maxX0 = X0
-    #     variationRate, meanB = calculateVariationRateAndMeanBWhen(X0; d=dValue, l=lValue)
-    #     if isCloseEnough(variationRate, 0.01; ε=ε)
-    #         break
-    #     else
-    #         X0 = updateX0(old=X0, )
-    #     end
-    # end
-
-    println("(d:$(round(dValue/h, sigdigits=4))h, l:$(round(lValue/h, sigdigits=4))h): maxX0 = $(round(maxX0/h, sigdigits=6))h")
+    X0::Float64, meanB::Float64 = @time solveByInterpolation(; xLower=0.0, xUpper=copy(lValue), dValue=dValue, lValue=lValue)
+    println("(d:$(round(dValue/h, sigdigits=4))h, l:$(round(lValue/h, sigdigits=4))h): maxX0 = $(round(X0/h, sigdigits=6))h")
     storeX0AndMeanBs(files; shouldEndLine=lIndex==length(ls), X0=X0, meanB=meanB)
 end
 storeSamplePoints(files)
+
+
+
 
 closeFiles(files)
