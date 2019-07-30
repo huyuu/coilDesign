@@ -1,3 +1,5 @@
+using Distributed
+
 # Constants
 
 @everywhere const myu0 = 4pi*1e-7
@@ -173,9 +175,9 @@ function calculateVariationRateAndMeanBWhen(X0; d::Float64, l::Float64)::Float64
     meanBOfZElement::Float64 = 0.0
 
     for (xIndex, xValue) in enumerate(xSamplePoints), (yIndex, yValue) in enumerate(ySamplePoints), (zIndex, zValue) in enumerate(zSamplePoints)
-        resultFromUpper = @spawn BAtPointFromUpper(Point(xValue, yValue, zValue); d=d, l=l)
-        resultFromLower = @spawn BAtPointFromLower(Point(xValue, yValue, zValue); d=d, l=l)
-        resultInArray::Array{Float64, 1} = myu0/(4pi)*(N*I) .* ( fetch(resultFromLower) .+ fetch(resultFromUpper) )
+        resultFromUpper = BAtPointFromUpper(Point(xValue, yValue, zValue); d=d, l=l)
+        resultFromLower = BAtPointFromLower(Point(xValue, yValue, zValue); d=d, l=l)
+        resultInArray::Array{Float64, 1} = myu0/(4pi)*(N*I) .* ( resultFromLower .+ resultFromUpper )
         # resultInArray::Array{Float64, 1} = myu0/(4pi)*(N*I) .* ( BAtPointFromLower(Point(xValue, yValue, zValue); d=d, l=l) .+ BAtPointFromUpper(Point(xValue, yValue, zValue); d=d, l=l) )
         zElementOfB = resultInArray[3]
         minBOfZElement = min(minBOfZElement, zElementOfB)
