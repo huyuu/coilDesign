@@ -52,14 +52,10 @@ end
 @everywhere Point(array::Array{Float64, 1}) = Point(array[1], array[2], array[3])
 
 
-@everywhere function numericalIntegrateOf(f::Function; upperLimit::Float64, lowerLimit::Float64, d::Float64, l::Float64, n::Integer, point::Point)::Array{Float64, 1}
+@everywhere function numericalIntegrateOf(f::Function; upperLimit::Float64, lowerLimit::Float64, d::Float64, l::Float64, n::Integer, point::Point)::Float64
     sumOfIntervals = let
         intervals = [ lowerLimit + k*(upperLimit-lowerLimit)/n for k in 1:n-1 ]
-        vector = [0.0; 0.0; 0.0]
-        for k in intervals
-            vector += f(;point=point, var=k, d=d, l=l)
-        end
-        vector
+        sum( f(;point=point, var=k, d=d, l=l) for k in intervals )
     end
 
     # intervals = [ lowerLimit + k*(upperLimit-lowerLimit)/n for k=1:n-1 ]
@@ -69,80 +65,88 @@ end
 end
 
 
-@everywhere function c1(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function c1(;point::Point, var::Float64, d::Float64, l::Float64)::Float64
     xVector = 0
     yVector = -(point.z+d)
     zVector = (point.y+h)
     denominator = ( (point.x-var)^2 + (point.y+h)^2 + (point.z+d)^2 ) ^ (1.5)
-    return [ xVector; yVector/denominator; zVector/denominator ]
+    # return [ xVector; yVector/denominator; zVector/denominator ]
+    return zVector/denominator
 end
 
 
-@everywhere function c2(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function c2(;point::Point, var::Float64, d::Float64, l::Float64)::Float64
     xVector = 0.0
     yVector = (point.z+d)
     zVector = -(point.y-h)
     denominator = ( (point.x-var)^2 + (point.y-h)^2 + (point.z+d)^2 ) ^ (1.5)
-    return [ xVector; yVector/denominator; zVector/denominator ]
+    # return [ xVector; yVector/denominator; zVector/denominator ]
+    return zVector/denominator
 end
 
 
-@everywhere function c3(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function c3(;point::Point, var::Float64, d::Float64, l::Float64)::Float64
     xVector = (point.z+d)R*cos(var)
     yVector = (point.z+d)R*sin(var)
     zVector = -R*( (point.y-R*sin(var))sin(var) + (point.x-l-R*cos(var))cos(var) )
     denominator = ( (point.x-l-R*cos(var))^2 + (point.y-R*sin(var))^2 + (point.z+d)^2 ) ^ (1.5)
-    return [ xVector/denominator; yVector/denominator; zVector/denominator ]
+    # return [ xVector/denominator; yVector/denominator; zVector/denominator ]
+    return zVector/denominator
 end
 
 
-@everywhere function c4(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function c4(;point::Point, var::Float64, d::Float64, l::Float64)::Float64
     xVector = (point.z+d)R*cos(var)
     yVector = (point.z+d)R*sin(var)
     zVector = -R*( (point.y-R*sin(var))sin(var) + (point.x+l-R*cos(var))cos(var) )
     denominator = ( (point.x+l-R*cos(var))^2 + (point.y-R*sin(var))^2 + (point.z+d)^2 ) ^ (1.5)
-    return [ xVector/denominator; yVector/denominator; zVector/denominator ]
+    # return [ xVector/denominator; yVector/denominator; zVector/denominator ]
+    return zVector/denominator
 end
 
 
-@everywhere function c5(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function c5(;point::Point, var::Float64, d::Float64, l::Float64)::Float64
     xVector = 0
     yVector = -(point.z-d)
     zVector = (point.y+h)
     denominator = ( (point.x-var)^2 + (point.y+h)^2 + (point.z-d)^2 ) ^ (1.5)
-    return [ xVector; yVector/denominator; zVector/denominator ]
+    # return [ xVector; yVector/denominator; zVector/denominator ]
+    return zVector/denominator
 end
 
 
-@everywhere function c6(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function c6(;point::Point, var::Float64, d::Float64, l::Float64)::Float64
     xVector = 0.0
     yVector = (point.z-d)
     zVector = -(point.y-h)
     denominator = ( (point.x-var)^2 + (point.y-h)^2 + (point.z-d)^2 ) ^ (1.5)
-    return [ xVector; yVector/denominator; zVector/denominator ]
+    # return [ xVector/denominator; yVector/denominator; zVector/denominator ]
+    return zVector/denominator
 end
 
 
-@everywhere function c7(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function c7(;point::Point, var::Float64, d::Float64, l::Float64)::Float64
     xVector = (point.z-d)R*cos(var)
     yVector = (point.z-d)R*sin(var)
     zVector = -R*( (point.y-R*sin(var))sin(var) + (point.x-l-R*cos(var))cos(var) )
     denominator = ( (point.x-l-R*cos(var))^2 + (point.y-R*sin(var))^2 + (point.z-d)^2 ) ^ (1.5)
-    return [ xVector/denominator; yVector/denominator; zVector/denominator ]
+    # return [ xVector/denominator; yVector/denominator; zVector/denominator ]
+    return zVector/denominator
 end
 
 
-@everywhere function c8(;point::Point, var::Float64, d::Float64, l::Float64)::Array{Float64, 1}
+@everywhere function c8(;point::Point, var::Float64, d::Float64, l::Float64)::Float64
     xVector = (point.z-d)R*cos(var)
     yVector = (point.z-d)R*sin(var)
     zVector = -R*( (point.y-R*sin(var))sin(var) + (point.x+l-R*cos(var))cos(var) )
     denominator = ( (point.x+l-R*cos(var))^2 + (point.y-R*sin(var))^2 + (point.z-d)^2 ) ^ (1.5)
-    return [ xVector/denominator; yVector/denominator; zVector/denominator ]
+    # return [ xVector/denominator; yVector/denominator; zVector/denominator ]
+    return zVector/denominator
 end
 
 
-@everywhere function BAtPointFromLower(point::Point; d::Float64, l::Float64)::Array{Float64, 1}
-    result::Array{Float64, 1} = numericalIntegrateOf(c1; lowerLimit=-l, upperLimit=l, d=d, l=l, n=sourceIntervals, point=point)
+@everywhere function BAtPointFromLower(point::Point; d::Float64, l::Float64)::Float64
+    result::Float64 = numericalIntegrateOf(c1; lowerLimit=-l, upperLimit=l, d=d, l=l, n=sourceIntervals, point=point)
     result += numericalIntegrateOf(c2; lowerLimit=-l, upperLimit=l, d=d, l=l, n=sourceIntervals, point=point)
     result += numericalIntegrateOf(c3; lowerLimit=-pi/2, upperLimit=pi/2, d=d, l=l, n=sourceIntervals, point=point)
     result += numericalIntegrateOf(c4; lowerLimit=pi/2, upperLimit=3pi/2, d=d, l=l, n=sourceIntervals, point=point)
@@ -150,8 +154,8 @@ end
 end
 
 
-@everywhere function BAtPointFromUpper(point::Point; d::Float64, l::Float64)::Array{Float64, 1}
-    result::Array{Float64, 1} = numericalIntegrateOf(c5; lowerLimit=-l, upperLimit=l, d=d, l=l, n=sourceIntervals, point=point)
+@everywhere function BAtPointFromUpper(point::Point; d::Float64, l::Float64)::Float64
+    result::Float64 = numericalIntegrateOf(c5; lowerLimit=-l, upperLimit=l, d=d, l=l, n=sourceIntervals, point=point)
     result += numericalIntegrateOf(c6; lowerLimit=-l, upperLimit=l, d=d, l=l, n=sourceIntervals, point=point)
     result += numericalIntegrateOf(c7; lowerLimit=-pi/2, upperLimit=pi/2, d=d, l=l, n=sourceIntervals, point=point)
     result += numericalIntegrateOf(c8; lowerLimit=pi/2, upperLimit=3pi/2, d=d, l=l, n=sourceIntervals, point=point)
@@ -171,9 +175,8 @@ function calculateVariationRateAndMeanBWhen(X0; d::Float64, l::Float64)::Tuple{F
     for (xIndex, xValue) in enumerate(xSamplePoints), (yIndex, yValue) in enumerate(ySamplePoints), (zIndex, zValue) in enumerate(zSamplePoints)
         resultFromUpper = BAtPointFromUpper(Point(xValue, yValue, zValue); d=d, l=l)
         resultFromLower = BAtPointFromLower(Point(xValue, yValue, zValue); d=d, l=l)
-        resultInArray::Array{Float64, 1} = myu0/(4pi)*(N*I) .* ( resultFromLower .+ resultFromUpper )
+        result[xIndex, yIndex, zIndex] = myu0/(4pi)*(N*I) .* ( resultFromLower .+ resultFromUpper )
         # resultInArray::Array{Float64, 1} = myu0/(4pi)*(N*I) .* ( BAtPointFromLower(Point(xValue, yValue, zValue); d=d, l=l) .+ BAtPointFromUpper(Point(xValue, yValue, zValue); d=d, l=l) )
-        result[xIndex, yIndex, zIndex] = resultInArray[3]
     end
     meanBOfZElement = mean(result)
     minBOfZElement = min(result...)
