@@ -23,7 +23,7 @@ using Distributed
 
 @everywhere const ds = let
     lowerCoeff = 0.1
-    upperCoeff = 2.0
+    upperCoeff = 1.0
     n::Int = axisPoints
     ( i*h for i=range(lowerCoeff, stop=upperCoeff, length=n) )
 end
@@ -160,68 +160,62 @@ end
 
 
 using Statistics
-function calculateVariationRateAndMeanBWhen(X0; d::Float64, l::Float64)::Float64
-    result = map(zeros((samplePoints, samplePoints))) do x
-        Point(x, x, x)
-    end
+function calculateVariationRateAndMeanBWhen(X0; d::Float64, l::Float64)::Tuple{Float64, Float64}
+    result = zeros((samplePoints, samplePoints, samplePoints))
     # Set sample points in Y-Z plane
     ySamplePoints = LinRange(-Y0, Y0, samplePoints)
     zSamplePoints = LinRange(-Z0, Z0, samplePoints)
     xSamplePoints = LinRange(0.0, X0, round(Int, sampleIntervals/2 + 1))
     allPoints = length(xSamplePoints) * length(ySamplePoints) * length(zSamplePoints)
 
-    minBOfZElement::Float64 = 1.0
-    maxBOfZElement::Float64 = 0.0
-    meanBOfZElement::Float64 = 0.0
-
     for (xIndex, xValue) in enumerate(xSamplePoints), (yIndex, yValue) in enumerate(ySamplePoints), (zIndex, zValue) in enumerate(zSamplePoints)
         resultFromUpper = BAtPointFromUpper(Point(xValue, yValue, zValue); d=d, l=l)
         resultFromLower = BAtPointFromLower(Point(xValue, yValue, zValue); d=d, l=l)
         resultInArray::Array{Float64, 1} = myu0/(4pi)*(N*I) .* ( resultFromLower .+ resultFromUpper )
         # resultInArray::Array{Float64, 1} = myu0/(4pi)*(N*I) .* ( BAtPointFromLower(Point(xValue, yValue, zValue); d=d, l=l) .+ BAtPointFromUpper(Point(xValue, yValue, zValue); d=d, l=l) )
-        zElementOfB = resultInArray[3]
-        minBOfZElement = min(minBOfZElement, zElementOfB)
-        maxBOfZElement = max(maxBOfZElement, zElementOfB)
-        meanBOfZElement += zElementOfB/allPoints
+        result[xIndex, yIndex, zIndex] = resultInArray[3]
     end
+    meanBOfZElement = mean(result)
+    minBOfZElement = min(result...)
+    maxBOfZElement = max(result...)
 
-    # variationRate = (maxBOfZElement-minBOfZElement)/meanBOfZElement
-    return meanBOfZElement
+    variationRate = (maxBOfZElement-minBOfZElement)/meanBOfZElement
+    return variationRate, meanBOfZElement
 end
 
 
-function solveByInterpolation(;xLower::Float64, xUpper::Float64, dValue::Float64, lValue::Float64)::Tuple{Float64, Float64}
+function solveByInterpolation(;xLower::Float64, xUpper::Float64, dValue::Float64, lValue::Float64)::Tuple{Float64, Float64, Float64}
     standard = 0.0
     signAndResultAt(x) = let
-        result = calculateVariationRateAndMeanBWhen(x; d=dValue, l=lValue)
-        signOfResult = sign(result-standard)
-        (signOfResult, result)
+        variationRate, meanB = calculateVariationRateAndMeanBWhen(x; d=dValue, l=lValue)
+        signOfResult = sign(variationRate-standard)
+        (signOfResult, variationRate, meanB)
     end
-    xLowerSign, xLowerResult = signAndResultAt(xLower)
-    xUpperSign, xUpperResult = signAndResultAt(xUpper)
-    xMiddleSign, xMiddleResult = signAndResultAt((xUpper+xLower)/2)
+    xLowerSign, xLowerVarRate, xLowerMeanB = signAndResultAt(xLower)
+    xUpperSign, xUpperVarRate, xUpperMeanB = signAndResultAt(xUpper)
+    xMiddleSign, xMiddleVarRate, xMiddleMeanB = signAndResultAt((xUpper+xLower)/2)
 
     while true
         if xLowerSign == xUpperSign == xMiddleSign
-            return (standard, 0.0)  # no solution
+            return (standard, 1.0, 0.0)  # no solution
         elseif isCloseEnough(xUpperSign, standard)
-            return (xUpper, xUpperResult)
+            return (xUpper, xUpperVarRate, xUpperMeanB)
         elseif isCloseEnough(xMiddleSign, standard)
-            return (xMiddle, xMiddleResult)
+            return (xMiddle, xMiddleVarRate, xMiddleMeanB)
         elseif isCloseEnough(xLowerSign, standard)
-            return (xLower, xLowerResult)
+            return (xLower, xLowerVarRate, xLowerMeanB)
 
         elseif xLowerSign == xMiddleSign != xUpperSign
             xLower = xMiddle
-            xLowerSign, xLowerResult = signAndResultAt(xLower)
+            xLowerSign, xLowerVarRate, xLowerMeanB = signAndResultAt(xLower)
             xMiddle = (xMiddle+xUpper)/2
-            xMiddleSign, xMiddleResult = signAndResultAt(xMiddle)
+            xMiddleSign, xMiddleVarRate, xMiddleMeanB = signAndResultAt(xMiddle)
             continue
         elseif xLowerSign != xMiddleSign == xUpperSign
             xUpper = xMiddle
-            xUpperSign, xUpperResult = signAndResultAt(xUpperSign)
+            xUpperSign, xUpperVarRate, xUpperMeanB = signAndResultAt(xUpper)
             xMiddle = (xLower+xMiddle)/2
-            xMiddleSign, xMiddleResult = signAndResultAt(xMiddle)
+            xMiddleSign, xMiddleVarRate, xMiddleMeanB = signAndResultAt(xMiddle)
             continue
         else
             error("Here")
@@ -321,7 +315,7 @@ const files = openFiles()
 const ε = 0.01 * 0.1  # error = 10%
 
 for (dIndex, dValue) in enumerate(ds), (lIndex, lValue) in enumerate(ls)
-    X0::Float64, meanB::Float64 = @time solveByInterpolation(; xLower=0.0, xUpper=copy(lValue), dValue=dValue, lValue=lValue)
+    X0::Float64, variationRate::Float64, meanB::Float64 = @time solveByInterpolation(; xLower=0.0, xUpper=copy(lValue), dValue=dValue, lValue=lValue)
     println("(d:$(round(dValue/h, sigdigits=4))h, l:$(round(lValue/h, sigdigits=4))h): maxX0 = $(round(X0/h, sigdigits=6))h")
     storeX0AndMeanBs(files; shouldEndLine=lIndex==length(ls), X0=X0, meanB=meanB)
 end
