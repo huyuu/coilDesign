@@ -1,10 +1,13 @@
 using Distributed
+# addprocs(2)
+@everywhere using Statistics
+
 
 # Constants
 
 @everywhere const myu0 = 4pi*1e-7
-@everywhere const I = 50  # 1[A]
-@everywhere const N = 50
+@everywhere const I = 100  # 1[A]
+@everywhere const N = 500
 @everywhere const h = 0.05  # 5cm
 @everywhere const R = h
 @everywhere const Y0 = 0.1h
@@ -22,14 +25,14 @@ using Distributed
 
 
 @everywhere const ds = let
-    lowerCoeff = 0.1
-    upperCoeff = 1.0
+    lowerCoeff = 0.4
+    upperCoeff = 0.8
     n::Int = axisPoints
     ( i*h for i=range(lowerCoeff, stop=upperCoeff, length=n) )
 end
 
 @everywhere const ls = let
-    lowerCoeff = 1.0
+    lowerCoeff = 2.0
     upperCoeff = 5.0
     n::Int = axisPoints
     ( i*h for i=range(lowerCoeff, stop=upperCoeff, length=n) )
@@ -163,71 +166,101 @@ end
 end
 
 
-using Statistics
-function calculateVariationRateAndMeanBWhen(X0; d::Float64, l::Float64)::Tuple{Float64, Float64}
-    result = zeros((samplePoints, samplePoints, samplePoints))
+@everywhere function calculateVariationRateAndMeanBWhen(X0; d::Float64, l::Float64)::Tuple{Float64, Float64}
+    results = zeros((samplePoints, samplePoints, samplePoints))
     # Set sample points in Y-Z plane
-    ySamplePoints = LinRange(-Y0, Y0, samplePoints)
-    zSamplePoints = LinRange(-Z0, Z0, samplePoints)
+    ySamplePoints = LinRange(-0.001Y0, 0.001Y0, samplePoints)
+    zSamplePoints = LinRange(-0.001Z0, 0.001Z0, samplePoints)
     xSamplePoints = LinRange(0.0, X0, round(Int, sampleIntervals/2 + 1))
     allPoints = length(xSamplePoints) * length(ySamplePoints) * length(zSamplePoints)
+    # errorDescription = ""
 
     for (xIndex, xValue) in enumerate(xSamplePoints), (yIndex, yValue) in enumerate(ySamplePoints), (zIndex, zValue) in enumerate(zSamplePoints)
-        resultFromUpper = BAtPointFromUpper(Point(xValue, yValue, zValue); d=d, l=l)
-        resultFromLower = BAtPointFromLower(Point(xValue, yValue, zValue); d=d, l=l)
-        result[xIndex, yIndex, zIndex] = myu0/(4pi)*(N*I) .* ( resultFromLower .+ resultFromUpper )
+        resultsFromUpper =  BAtPointFromUpper(Point(xValue, yValue, zValue); d=d, l=l)
+        resultsFromLower = BAtPointFromLower(Point(xValue, yValue, zValue); d=d, l=l)
+        results[xIndex, yIndex, zIndex] = myu0/(4pi)*(N*I) * ( resultsFromLower + resultsFromUpper )
+        # if isCloseEnough(results[xIndex, yIndex, zIndex], 0)
+        #     errorDescription = "($xIndex, $yIndex, $zIndex) = $xValue, $yValue, $zValue"
+        #     break
+        # end
         # resultInArray::Array{Float64, 1} = myu0/(4pi)*(N*I) .* ( BAtPointFromLower(Point(xValue, yValue, zValue); d=d, l=l) .+ BAtPointFromUpper(Point(xValue, yValue, zValue); d=d, l=l) )
     end
-    meanBOfZElement = mean(result)
-    minBOfZElement = min(result...)
-    maxBOfZElement = max(result...)
+    # println(errorDescription)
+    meanBOfZElement = mean(results)
+    minBOfZElement = min(results...)
+    # minBOfZElement = let currentMin::Float64 = 1
+    #     for result in Iterators.flatten(results)
+    #         currentMin = result < currentMin ? result : currentMin
+    #     end
+    #     return currentMin
+    # end
+    maxBOfZElement = max(results...)
 
     variationRate = (maxBOfZElement-minBOfZElement)/meanBOfZElement
+    println("X0 = $X0: min = $minBOfZElement, max = $maxBOfZElement, meanB = $meanBOfZElement, var = $variationRate")
     return variationRate, meanBOfZElement
 end
 
 
-function solveByInterpolation(;xLower::Float64, xUpper::Float64, dValue::Float64, lValue::Float64)::Tuple{Float64, Float64, Float64}
-    standard = 0.0
+function solveByInterpolation(;xLowerOrigin::Float64, xUpperOrigin::Float64, dValue::Float64, lValue::Float64)::Tuple{Float64, Float64, Float64}
+    standard = 0.01
     signAndResultAt(x) = let
         variationRate, meanB = calculateVariationRateAndMeanBWhen(x; d=dValue, l=lValue)
         signOfResult = sign(variationRate-standard)
         (signOfResult, variationRate, meanB)
     end
-    xLowerSign, xLowerVarRate, xLowerMeanB = signAndResultAt(xLower)
-    xUpperSign, xUpperVarRate, xUpperMeanB = signAndResultAt(xUpper)
-    xMiddleSign, xMiddleVarRate, xMiddleMeanB = signAndResultAt((xUpper+xLower)/2)
+    xLower::Float64 = copy(xLowerOrigin)
+    xUpper::Float64 = copy(xUpperOrigin)
+    xMiddle = (xUpper+xLower)/2
+
+    xLowerFutureResults = @spawn signAndResultAt(xLower)
+    xUpperFutureResults = @spawn signAndResultAt(xUpper)
+    xMiddleFutureResults = @spawn signAndResultAt(xMiddle)
+
+    xLowerSign::Int, xLowerVarRate::Float64, xLowerMeanB::Float64 = fetch(xLowerFutureResults)
+    xUpperSign::Int, xUpperVarRate::Float64, xUpperMeanB::Float64 = fetch(xUpperFutureResults)
+    xMiddleSign::Int, xMiddleVarRate::Float64, xMiddleMeanB::Float64 = fetch(xMiddleFutureResults)
 
     while true
         if xLowerSign == xUpperSign == xMiddleSign
-            return (standard, 1.0, 0.0)  # no solution
-        elseif isCloseEnough(xUpperSign, standard)
+            println("return at first calculate with xLowerVarRate: $(xLowerVarRate), xMiddleVarRate: $(xMiddleVarRate), xUpperVarRate: $(xUpperVarRate)")
+            return (0.0, 1.0, 0.0)  # no solution
+        elseif isCloseEnough(xUpperVarRate, standard)
             return (xUpper, xUpperVarRate, xUpperMeanB)
-        elseif isCloseEnough(xMiddleSign, standard)
+        elseif isCloseEnough(xMiddleVarRate, standard)
             return (xMiddle, xMiddleVarRate, xMiddleMeanB)
-        elseif isCloseEnough(xLowerSign, standard)
+        elseif isCloseEnough(xLowerVarRate, standard)
             return (xLower, xLowerVarRate, xLowerMeanB)
 
         elseif xLowerSign == xMiddleSign != xUpperSign
             xLower = xMiddle
-            xLowerSign, xLowerVarRate, xLowerMeanB = signAndResultAt(xLower)
+            xLowerFutureResults = @spawn signAndResultAt(xLower)
+
             xMiddle = (xMiddle+xUpper)/2
-            xMiddleSign, xMiddleVarRate, xMiddleMeanB = signAndResultAt(xMiddle)
-            continue
+            xMiddleFutureResults = @spawn signAndResultAt(xMiddle)
+
+            xLowerSign, xLowerVarRate, xLowerMeanB = fetch(xLowerFutureResults)
+            xMiddleSign, xMiddleVarRate, xMiddleMeanB = fetch(xMiddleFutureResults)
+
         elseif xLowerSign != xMiddleSign == xUpperSign
             xUpper = xMiddle
-            xUpperSign, xUpperVarRate, xUpperMeanB = signAndResultAt(xUpper)
+            xUpperFutureResults = @spawn signAndResultAt(xUpper)
+
             xMiddle = (xLower+xMiddle)/2
-            xMiddleSign, xMiddleVarRate, xMiddleMeanB = signAndResultAt(xMiddle)
-            continue
+            xMiddleFutureResults = @spawn signAndResultAt(xMiddle)
+
+            xUpperSign, xUpperVarRate, xUpperMeanB = fetch(xUpperFutureResults)
+            xMiddleSign, xMiddleVarRate, xMiddleMeanB = fetch(xMiddleFutureResults)
+
         else
+            println("$(xLowerSign), $xMiddleSign, $xUpperSign")
             error("Here")
         end
     end
 end
 
 
-function isCloseEnough(a::Number, b::Float64; ε::Float64=ε)
+function isCloseEnough(a::Number, b::Float64; ε::Float64=ε)::Bool
     abs(a - b) < ε
 end
 
@@ -260,7 +293,7 @@ function myOpen(;fileName::String, modes::String="w", dirName::Union{String, Not
     end
 
     if isa(csvHeader, String)
-        write(file, csvHeader)
+        write(file, "$(csvHeader)\n")
     else  # csvHeader == nothing
         error("csvHeader shouldn't be nothing.")
     end
@@ -296,19 +329,19 @@ end
 
 function storeX0AndMeanBs(files::Dict{String, IOStream}; shouldEndLine::Bool, X0::Float64, meanB::Float64)
     if shouldEndLine
-        write(files["X0s"], round(X0, sigdigits=5), "\n")
-        write(files["meanBs"], round(meanB, sigdigits=5), "\n")
+        write(files["X0s"], "$(round(X0, sigdigits=5))\n")
+        write(files["meanBs"], "$(round(meanB, sigdigits=5))\n")
     else
-        write(files["X0s"], round(X0, sigdigits=5), ",")
-        write(files["meanBs"], round(meanB, sigdigits=5), ",")
+        write(files["X0s"], "$(round(X0, sigdigits=5)),")
+        write(files["meanBs"], "$(round(meanB, sigdigits=5)),")
     end
 end
 
 
 function storeSamplePoints(files::Dict{String, IOStream})
     map(ds, ls) do d, l
-        write(files["d"], round(d/h, sigdigits=4), "\n")
-        write(files["l"], round(l/h, sigdigits=4), "\n")
+        write(files["d"], "$(round(d/h, sigdigits=4))\n")
+        write(files["l"], "$(round(l/h, sigdigits=4))\n")
     end
 end
 
@@ -317,12 +350,13 @@ end
 const files = openFiles()
 const ε = 0.01 * 0.1  # error = 10%
 
+storeSamplePoints(files)
 for (dIndex, dValue) in enumerate(ds), (lIndex, lValue) in enumerate(ls)
-    X0::Float64, variationRate::Float64, meanB::Float64 = @time solveByInterpolation(; xLower=0.0, xUpper=copy(lValue), dValue=dValue, lValue=lValue)
+    X0::Float64, variationRate::Float64, meanB::Float64 = @time solveByInterpolation(; xLowerOrigin=0.01ε, xUpperOrigin=lValue, dValue=dValue, lValue=lValue)
     println("(d:$(round(dValue/h, sigdigits=4))h, l:$(round(lValue/h, sigdigits=4))h): maxX0 = $(round(X0/h, sigdigits=6))h")
     storeX0AndMeanBs(files; shouldEndLine=lIndex==length(ls), X0=X0, meanB=meanB)
 end
-storeSamplePoints(files)
+
 
 
 
