@@ -1,5 +1,5 @@
 using Distributed
-# addprocs(2)
+addprocs(3)
 @everywhere using Statistics
 
 
@@ -25,14 +25,14 @@ using Distributed
 
 
 @everywhere const ds = let
-    lowerCoeff = 0.4
-    upperCoeff = 0.8
+    lowerCoeff = 0.2
+    upperCoeff = 1.0
     n::Int = axisPoints
     ( i*h for i=range(lowerCoeff, stop=upperCoeff, length=n) )
 end
 
 @everywhere const ls = let
-    lowerCoeff = 2.0
+    lowerCoeff = 1.0
     upperCoeff = 5.0
     n::Int = axisPoints
     ( i*h for i=range(lowerCoeff, stop=upperCoeff, length=n) )
@@ -167,38 +167,26 @@ end
 
 
 @everywhere function calculateVariationRateAndMeanBWhen(X0; d::Float64, l::Float64)::Tuple{Float64, Float64}
-    results = zeros((samplePoints, samplePoints, samplePoints))
     # Set sample points in Y-Z plane
-    ySamplePoints = LinRange(-0.001Y0, 0.001Y0, samplePoints)
-    zSamplePoints = LinRange(-0.001Z0, 0.001Z0, samplePoints)
-    xSamplePoints = LinRange(0.0, X0, round(Int, sampleIntervals/2 + 1))
-    allPoints = length(xSamplePoints) * length(ySamplePoints) * length(zSamplePoints)
-    # errorDescription = ""
+    ySamplePoints = LinRange(-Y0, Y0, samplePoints)
+    zSamplePoints = LinRange(-Z0, Z0, samplePoints)
+    xSamplePoints = LinRange(0.0, X0, round(Int, samplePoints/2))
+    results = zeros((length(xSamplePoints), length(ySamplePoints), length(zSamplePoints)))
 
     for (xIndex, xValue) in enumerate(xSamplePoints), (yIndex, yValue) in enumerate(ySamplePoints), (zIndex, zValue) in enumerate(zSamplePoints)
         resultsFromUpper =  BAtPointFromUpper(Point(xValue, yValue, zValue); d=d, l=l)
         resultsFromLower = BAtPointFromLower(Point(xValue, yValue, zValue); d=d, l=l)
         results[xIndex, yIndex, zIndex] = myu0/(4pi)*(N*I) * ( resultsFromLower + resultsFromUpper )
-        # if isCloseEnough(results[xIndex, yIndex, zIndex], 0)
-        #     errorDescription = "($xIndex, $yIndex, $zIndex) = $xValue, $yValue, $zValue"
-        #     break
-        # end
         # resultInArray::Array{Float64, 1} = myu0/(4pi)*(N*I) .* ( BAtPointFromLower(Point(xValue, yValue, zValue); d=d, l=l) .+ BAtPointFromUpper(Point(xValue, yValue, zValue); d=d, l=l) )
     end
     # println(errorDescription)
     meanBOfZElement = mean(results)
     minBOfZElement = min(results...)
-    # minBOfZElement = let currentMin::Float64 = 1
-    #     for result in Iterators.flatten(results)
-    #         currentMin = result < currentMin ? result : currentMin
-    #     end
-    #     return currentMin
-    # end
     maxBOfZElement = max(results...)
 
     variationRate = (maxBOfZElement-minBOfZElement)/meanBOfZElement
-    println("X0 = $X0: min = $minBOfZElement, max = $maxBOfZElement, meanB = $meanBOfZElement, var = $variationRate")
-    return variationRate, meanBOfZElement
+    # println("X0 = $X0: min = $minBOfZElement, max = $maxBOfZElement, meanB = $meanBOfZElement, var = $variationRate")
+    return (variationRate, meanBOfZElement)
 end
 
 
@@ -260,7 +248,7 @@ function solveByInterpolation(;xLowerOrigin::Float64, xUpperOrigin::Float64, dVa
 end
 
 
-function isCloseEnough(a::Number, b::Float64; ε::Float64=ε)::Bool
+function isCloseEnough(a::Number, b::Number; ε::Float64=ε)::Bool
     abs(a - b) < ε
 end
 
@@ -294,8 +282,6 @@ function myOpen(;fileName::String, modes::String="w", dirName::Union{String, Not
 
     if isa(csvHeader, String)
         write(file, "$(csvHeader)\n")
-    else  # csvHeader == nothing
-        error("csvHeader shouldn't be nothing.")
     end
 
     return file
@@ -313,8 +299,8 @@ function openFiles()::Dict{String, IOStream}
 
     fileD = myOpen(;fileName="dSamplesFrom$(dsLower)To$(dsUpper).csv", dirName=dirName, withNewDirIfNeeded=true, csvHeader="d(h)")
     fileL = myOpen(;fileName="lSamplesFrom$(lsLower)To$(lsUpper).csv", dirName=dirName, withNewDirIfNeeded=true, csvHeader="l(h)")
-    fileX0s = myOpen(;fileName="maxX0s_D=$(dsLower)To$(dsUpper)_L=$(lsLower)To$(lsUpper).csv", dirName=dirName, withNewDirIfNeeded=true, csvHeader="maxX0(h)")
-    fileMeanBs = myOpen(;fileName="meanBs_D=$(dsLower)To$(dsUpper)_L=$(lsLower)To$(lsUpper).csv", dirName=dirName, withNewDirIfNeeded=true, csvHeader="meanBs[mT]")
+    fileX0s = myOpen(;fileName="maxX0s_D=$(dsLower)To$(dsUpper)_L=$(lsLower)To$(lsUpper).csv", dirName=dirName, withNewDirIfNeeded=true, csvHeader=nothing)
+    fileMeanBs = myOpen(;fileName="meanBs_D=$(dsLower)To$(dsUpper)_L=$(lsLower)To$(lsUpper).csv", dirName=dirName, withNewDirIfNeeded=true, csvHeader=nothing)
 
     return Dict("d"=>fileD, "l"=>fileL, "X0s"=>fileX0s, "meanBs"=>fileMeanBs)
 end
