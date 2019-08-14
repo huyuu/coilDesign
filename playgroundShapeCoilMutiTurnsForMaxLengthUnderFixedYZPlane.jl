@@ -8,7 +8,7 @@ addprocs(3)
 @everywhere const myu0 = 4pi*1e-7
 @everywhere const I = 100  # 1[A]
 @everywhere const N = 500
-@everywhere const h = 0.05  # 5cm
+@everywhere const h = 0.02  # 2cm
 @everywhere const R = h
 @everywhere const Y0 = 0.1h
 @everywhere const Z0 = 0.1h
@@ -23,7 +23,7 @@ addprocs(3)
 @everywhere const sampleIntervals = 70
 @everywhere const samplePoints = sampleIntervals+1
 # Points for the outer most loop, therefore should not be too much."
-@everywhere const axisPoints = 300
+@everywhere const axisPoints = 50
 
 
 @everywhere const ds = let
@@ -175,13 +175,11 @@ end
         results[xIndex, yIndex, zIndex] = myu0/(4pi)*(N*I) * ( resultsFromLower + resultsFromUpper )
         # resultInArray::Array{Float64, 1} = myu0/(4pi)*(N*I) .* ( BAtPointFromLower(Point(xValue, yValue, zValue); d=d, l=l) .+ BAtPointFromUpper(Point(xValue, yValue, zValue); d=d, l=l) )
     end
-    # println(errorDescription)
     meanBOfZElement = mean(results)
     minBOfZElement = min(results...)
     maxBOfZElement = max(results...)
 
     variationRate = (maxBOfZElement-minBOfZElement)/meanBOfZElement
-    # println("X0 = $X0: min = $minBOfZElement, max = $maxBOfZElement, meanB = $meanBOfZElement, var = $variationRate")
     return (variationRate, meanBOfZElement)
 end
 

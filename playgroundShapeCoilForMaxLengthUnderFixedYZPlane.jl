@@ -19,8 +19,8 @@ addprocs(3)
 @everywhere const standard = 0.01  # tolerable variation rate
 @everywhere const ε = standard * 0.01  # error = 1%
 # Intervals into which a line is cut, ex: c1. Should not be too small otherwise divergence condition could be raised."
-@everywhere const sourceIntervals = 70
-@everywhere const sampleIntervals = 70
+@everywhere const sourceIntervals = 50
+@everywhere const sampleIntervals = 50
 @everywhere const samplePoints = sampleIntervals+1
 # Points for the outer most loop, therefore should not be too much."
 @everywhere const axisPoints = 300
