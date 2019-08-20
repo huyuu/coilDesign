@@ -11,7 +11,7 @@ addprocs(4)
 @everywhere const I = 3  # 1[A]
 @everywhere const N = 200
 # Ingredient
-@everywhere const standardPhiOfConductor = 2.03e-3  # 2.03mm using AWG 18
+@everywhere const standardPhiOfConductor = 1.2e-3  # 2.03mm using AWG 18
 @everywhere const thicknessOfGFRPWall = 2e-2  # 2cm
 # Coil Shape
 @everywhere const h = 0.05  # 5cm
@@ -26,17 +26,13 @@ addprocs(4)
 
 # Variables
 
-# Tolerable Variation Rate
-@everywhere const standard = 0.01
-# Error = 1%
-@everywhere const ε = standard * 0.01
 # Intervals into which a current source loop is cut, ex: c1. Should not be too small otherwise divergence condition could be raised."
 @everywhere const sourceIntervals = 50
 # Measurement points
-@everywhere const sampleIntervals = 50
+@everywhere const sampleIntervals = 120
 @everywhere const samplePoints = sampleIntervals+1
 # File Operation
-const dirName = "precise_I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round(h*100, sigdigits=2))cm_X0=$(round(X0/h, sigdigits=2))h_Y0=$(round(Y0/h, sigdigits=2))h_Z0=$(round(Z0/h, sigdigits=2))h"
+const dirName = "precise_I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round(h*100, sigdigits=2))cm_X0=$(round(X0/h, sigdigits=2))h_Y0=$(round(Y0/h, sigdigits=2))h_Z0=$(round(Z0/h, sigdigits=2))h_thickness=$(round(thicknessOfGFRPWall*100))cm_conductorPhi=$(round(standardPhiOfConductor*1e3))mm"
 
 
 # Children Variables
@@ -50,6 +46,7 @@ const dirName = "precise_I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round
 
 # Models
 
+# Shape parameters of source elements.
 @everywhere struct ParsOfSource
     c1_y::Float64
     c1_z::Float64
@@ -68,6 +65,33 @@ const dirName = "precise_I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round
     c7_z::Float64
     c8_R::Float64
     c8_z::Float64
+end
+# Generate from turn number n.
+@everywhere ParsOfSource(n::Int) = let
+    index::PositionIndex = PositionIndex(n)
+
+    c1_y =  -h - standardPhiOfConductor*(index.layer-1) - standardRadiusOfConductor
+    c1_z = -d + index.centerDistance * standardPhiOfConductor
+    c2_y = h + standardPhiOfConductor*(index.layer-1) + standardRadiusOfConductor
+    c2_z = c1_z
+
+    global R
+    c3_R = R + standardPhiOfConductor*(index.layer-1) + standardRadiusOfConductor
+    c3_z = c1_z
+    c4_R = c3_R
+    c4_z = c1_z
+
+    c5_y =  -h - standardPhiOfConductor*(index.layer-1) - standardRadiusOfConductor
+    c5_z = d + index.centerDistance * standardPhiOfConductor
+    c6_y = h + standardPhiOfConductor*(index.layer-1) + standardRadiusOfConductor
+    c6_z = c5_z
+
+    c7_R = R + standardPhiOfConductor*(index.layer-1) + standardRadiusOfConductor
+    c7_z = c5_z
+    c8_R = c7_R
+    c8_z = c5_z
+
+    return ParsOfSource(c1_y, c1_z, c2_y, c2_z, c3_R, c3_z, c4_R, c4_z, c5_y, c5_z, c6_y, c6_z, c7_R, c7_z, c8_R, c8_z)
 end
 
 
@@ -122,36 +146,9 @@ end
 end
 
 
-@everywhere function getSourceSegment(n::Int)::ParsOfSource
-    index::PositionIndex = PositionIndex(n)
-    c1_y =  -h - standardPhiOfConductor*(index.layer-1) - standardRadiusOfConductor
-    c1_z = -d + index.centerDistance * standardPhiOfConductor
-    c2_y = h + standardPhiOfConductor*(index.layer-1) + standardRadiusOfConductor
-    c2_z = c1_z
-
-    global R
-    c3_R = R + standardPhiOfConductor*(index.layer-1) + standardRadiusOfConductor
-    c3_z = c1_z
-    c4_R = c3_R
-    c4_z = c1_z
-
-    c5_y =  -h - standardPhiOfConductor*(index.layer-1) - standardRadiusOfConductor
-    c5_z = d + index.centerDistance * standardPhiOfConductor
-    c6_y = h + standardPhiOfConductor*(index.layer-1) + standardRadiusOfConductor
-    c6_z = c5_z
-
-    c7_R = R + standardPhiOfConductor*(index.layer-1) + standardRadiusOfConductor
-    c7_z = c5_z
-    c8_R = c7_R
-    c8_z = c5_z
-
-    return ParsOfSource(c1_y, c1_z, c2_y, c2_z, c3_R, c3_z, c4_R, c4_z, c5_y, c5_z, c6_y, c6_z, c7_R, c7_z, c8_R, c8_z)
-end
-
-
-@everywhere function BFromSingleTurn(x, y, z; n::Int)
-    pars::ParsOfSource = getSourceSegment(n)
-    result::Float64 = 0
+@everywhere function BFromSingleTurn(x, y, z; n::Int)::Float64
+    pars::ParsOfSource = ParsOfSource(n)
+    local result::Float64 = 0
     # B from lower
     result += numericalIntegrateOf((_x) -> c1(x, y, z; _x=_x, _y=pars.c1_y, _z=pars.c1_z); lowerLimit=-l, upperLimit=l, n=sourceIntervals)
     result += numericalIntegrateOf((_x) -> c2(x, y, z; _x=_x, _y=pars.c1_y, _z=pars.c1_z); lowerLimit=-l, upperLimit=l, n=sourceIntervals)
@@ -166,7 +163,7 @@ end
 end
 
 
-@everywhere function calculateBAt(x::Float64, y::Float64, z::Float64)::Float64
+function calculateBAt(x::Float64, y::Float64, z::Float64)::Float64
     local results::Float64 = 0
     futureResultsOfSingleTurn::Array{Future} = []
 
@@ -179,7 +176,7 @@ end
         results += fetch(futureResult)
     end
 
-    return results
+    return μ/(4pi)*I * results
 end
 
 
@@ -218,9 +215,9 @@ end
 
 
 function storeSamplePoints()
-    xSampleFile = myOpen(;fileName="xSamples", dirName=dirName, csvHeader="x(m)")
-    ySampleFile = myOpen(;fileName="ySamples", dirName=dirName, csvHeader="y(m)")
-    zSampleFile = myOpen(;fileName="zSamples", dirName=dirName, csvHeader="z(m)")
+    xSampleFile = myOpen(;fileName="xSamples.csv", dirName=dirName, csvHeader="x(m)")
+    ySampleFile = myOpen(;fileName="ySamples.csv", dirName=dirName, csvHeader="y(m)")
+    zSampleFile = myOpen(;fileName="zSamples.csv", dirName=dirName, csvHeader="z(m)")
     for x in xs
         write(xSampleFile, "$(round(x, sigdigits=5))\n")
     end
@@ -237,30 +234,35 @@ end
 
 storeSamplePoints()
 
-resultsFile = myOpen(;fileName="resultsInZ0Plane", dirName=dirName, csvHeader=nothing)
-results = zeros((length(xs), length(ys), length(zs)))
-for (xIndex, xValue) in enumerate(xs), (yIndex, yValue) in enumerate(ys), (zIndex, zValue) in enumerate(zs)
-    global results
-    b::Float64 = @time calculateBAt(xValue, yValue, zValue)
-    results[xIndex, yIndex, zIndex] = b
-    if zIndex == length(zs)
-        if xIndex != length(xs)
-            write(resultsFile, "$b,")
-        else
-            write(resultsFile, "$b\n")
+let resultsInZ0PlaneFile, bs, resultFile
+	# init resultInZ0PlaneFile
+    resultsInZ0PlaneFile = myOpen(;fileName="resultsInZ0Plane.csv", dirName=dirName, csvHeader=nothing)
+	# init final results
+    bs = zeros((length(xs), length(ys), length(zs)))
+	# main calculation of b at sample points
+    for (zIndex, zValue) in enumerate(zs), (yIndex, yValue) in enumerate(ys), (xIndex, xValue) in enumerate(xs)
+        b::Float64 = calculateBAt(xValue, yValue, zValue)
+        bs[xIndex, yIndex, zIndex] = b
+        # result storation
+        if zIndex == length(zs)
+            if xIndex == length(xs)
+                write(resultsInZ0PlaneFile, "$b\n")
+            else
+                write(resultsInZ0PlaneFile, "$b,")
+            end
         end
     end
-end
-close(resultsFile)
+    close(resultsInZ0PlaneFile)
 
-let resultFile
-    meanB = mean(results)
-    minB = min(results...)
-    maxB = max(results...)
+    meanB = mean(bs)
+    minB = min(bs...)
+    maxB = max(bs...)
     variationRate = (maxB - minB)/meanB
+    println("variationRate = $variationRate")
+    println("meanB = $meanB")
 
-    resultFile = myOpen(;fileName="result", dirName=dirName, csvHeader="variationRate(%),meanB(mT)")
-    write(resultFile, "$(round(variationRate*100, sigdigits=6))")
+    resultFile = myOpen(;fileName="result.csv", dirName=dirName, csvHeader="variationRate(%),meanB(mT)")
+    write(resultFile, "$(round(variationRate*100, sigdigits=6)),")
     write(resultFile, "$(round(meanB*1000, sigdigits=6))")
     close(resultFile)
 end
