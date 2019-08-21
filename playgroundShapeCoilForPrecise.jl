@@ -31,8 +31,6 @@ addprocs(4)
 # Measurement points
 @everywhere const sampleIntervals = 120
 @everywhere const samplePoints = sampleIntervals+1
-# File Operation
-const dirName = "precise_I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round(h*100, sigdigits=2))cm_X0=$(round(X0/h, sigdigits=2))h_Y0=$(round(Y0/h, sigdigits=2))h_Z0=$(round(Z0/h, sigdigits=2))h_thickness=$(round(thicknessOfGFRPWall*100))cm_conductorPhi=$(round(standardPhiOfConductor*1e3))mm"
 
 
 # Children Variables
@@ -42,6 +40,9 @@ const dirName = "precise_I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round
 @everywhere const zs = LinRange(-Z0, Z0, samplePoints)
 @everywhere const standardRadiusOfConductor = standardPhiOfConductor/2
 @everywhere const conductorsPerLayer = div(thicknessOfGFRPWall, standardPhiOfConductor)
+# File Operation
+const dirName = "precise_I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round(h*100, sigdigits=2))cm_X0=$(round(X0/h, sigdigits=2))h_Y0=$(round(Y0/h, sigdigits=2))h_Z0=$(round(Z0/h, sigdigits=2))h_thickness=$(round(thicknessOfGFRPWall*100))cm_conductorPhi=$(round(standardPhiOfConductor*1e3, sigdigit=3))mm"
+
 
 
 # Models

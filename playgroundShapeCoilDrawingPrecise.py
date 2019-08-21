@@ -14,7 +14,9 @@ h = 0.05
 X0Coeff = 0.1
 Y0Coeff = 0.1
 Z0Coeff = 0.1
-dirName = f'precise_I={I}_N={N}_h={h*100}cm_X0={X0Coeff}h_Y0={Y0Coeff}h_Z0={Z0Coeff}h'
+thickness = 2.0  # cm
+conductorPhi = 1.12 # mm
+dirName = f'precise_I={I}_N={N}_h={h*100}cm_X0={X0Coeff}h_Y0={Y0Coeff}h_Z0={Z0Coeff}h_thickness={thickness}cm_conductorPhi={conductorPhi}mm'
 
 
 # Functions
