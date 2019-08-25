@@ -9,9 +9,9 @@ addprocs(4)
 @everywhere const μ = 4pi*1e-7
 # Current
 @everywhere const I = 3  # 1[A]
-@everywhere const N = 200
+@everywhere const N = 400
 # Ingredient
-@everywhere const standardPhiOfConductor = 1.2e-3  # 2.03mm using AWG 18
+@everywhere const standardPhiOfConductor = 2.03e-3  # 2.03mm using AWG 18
 @everywhere const thicknessOfGFRPWall = 2e-2  # 2cm
 # Coil Shape
 @everywhere const h = 0.05  # 5cm
@@ -27,9 +27,9 @@ addprocs(4)
 # Variables
 
 # Intervals into which a current source loop is cut, ex: c1. Should not be too small otherwise divergence condition could be raised."
-@everywhere const sourceIntervals = 50
+@everywhere const sourceIntervals = 100
 # Measurement points
-@everywhere const sampleIntervals = 120
+@everywhere const sampleIntervals = 100
 @everywhere const samplePoints = sampleIntervals+1
 
 
@@ -41,7 +41,7 @@ addprocs(4)
 @everywhere const standardRadiusOfConductor = standardPhiOfConductor/2
 @everywhere const conductorsPerLayer = div(thicknessOfGFRPWall, standardPhiOfConductor)
 # File Operation
-const dirName = "precise_I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round(h*100, sigdigits=2))cm_X0=$(round(X0/h, sigdigits=2))h_Y0=$(round(Y0/h, sigdigits=2))h_Z0=$(round(Z0/h, sigdigits=2))h_thickness=$(round(thicknessOfGFRPWall*100))cm_conductorPhi=$(round(standardPhiOfConductor*1e3, sigdigit=3))mm"
+const dirName = "precise_I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round(h*100, sigdigits=2))cm_X0=$(round(X0/h, sigdigits=2))h_Y0=$(round(Y0/h, sigdigits=2))h_Z0=$(round(Z0/h, sigdigits=2))h_thickness=$(round(thicknessOfGFRPWall*100))cm_conductorPhi=$(round(standardPhiOfConductor*1e3, sigdigits=3))mm"
 
 
 

@@ -9,7 +9,7 @@ import pandas as pd
 # Variables
 
 I = 3.0
-N = 200
+N = 400
 h = 0.05
 X0Coeff = 0.1
 Y0Coeff = 0.1
