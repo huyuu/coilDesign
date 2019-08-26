@@ -11,7 +11,7 @@ addprocs(4)
 @everywhere const I = 3  # 1[A]
 @everywhere const N = 400
 # Ingredient
-@everywhere const standardPhiOfConductor = 2.03e-3  # 2.03mm using AWG 18
+@everywhere const standardPhiOfConductor = 0.81e-3  # 2.03mm using AWG 18
 @everywhere const thicknessOfGFRPWall = 2e-2  # 2cm
 # Coil Shape
 @everywhere const h = 0.05  # 5cm

@@ -1,5 +1,5 @@
 using Distributed
-addprocs(3)
+addprocs(6)
 @everywhere using Statistics
 
 
@@ -7,7 +7,7 @@ addprocs(3)
 
 @everywhere const myu0 = 4pi*1e-7
 @everywhere const I = 100  # 1[A]
-@everywhere const N = 500
+@everywhere const N = 400
 @everywhere const h = 0.05  # 5cm
 @everywhere const R = h
 @everywhere const Y0 = 0.1h
