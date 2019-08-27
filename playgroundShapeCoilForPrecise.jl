@@ -228,6 +228,9 @@ function storeSamplePoints()
     for z in zs
         write(zSampleFile, "$(round(z, sigdigits=5))\n")
     end
+    close(xSampleFile)
+    close(ySampleFile)
+    close(zSampleFile)
 end
 
 
