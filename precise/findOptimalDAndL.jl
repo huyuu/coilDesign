@@ -154,17 +154,8 @@ end
 
 
 @everywhere function numericalIntegrateOf(f::Function)::BVector
-    # sumOfIntervals = let
-    #     temp::BVector = zeros(3)
-    #     intervals = [ lowerLimit + k*(upperLimit-lowerLimit)/n for k in 1:n-1 ]
-    #     for k in intervals
-    #         temp .+= f(k)
-    #     end
-    #     temp
-    # end
-    # return (upperLimit-lowerLimit)/n * ( (f(upperLimit) .+ f(lowerLimit))/2 .+ sumOfIntervals )
     local result::BVector = [0, 0, 0]
-    for (node, weight) in (nodes, weights)
+    for (node, weight) in zip(nodes, weights)
         result += weight * f(node)
     end
     return result

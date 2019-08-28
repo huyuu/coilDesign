@@ -169,7 +169,7 @@ end
     # end
     # return (upperLimit-lowerLimit)/n * ( (f(upperLimit) .+ f(lowerLimit))/2 .+ sumOfIntervals )
     local result::BVector = [0, 0, 0]
-    for (node, weight) in (nodes, weights)
+    for (node, weight) in zip(nodes, weights)
         result += weight * f(node)
     end
     return result
