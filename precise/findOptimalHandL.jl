@@ -36,7 +36,7 @@ addprocs(4)
 @everywhere import Pkg
 @everywhere Pkg.add("FastGaussQuadrature")
 @everywhere using FastGaussQuadrature
-@everywhere const nodes, weights = gausslaguerre(8)
+@everywhere const nodes, weights = gausslaguerre(10)
 
 
 # Children Variables

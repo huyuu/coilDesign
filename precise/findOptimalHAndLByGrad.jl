@@ -20,6 +20,11 @@ addprocs(4)
 @everywhere const X0 = 1e-2  # 1cm
 @everywhere const Y0 = 1e-2  # 1cm
 @everywhere const Z0 = 1e-2  # 1cm
+# Gauss Integral Nodes and Weights
+@everywhere import Pkg
+@everywhere Pkg.add("FastGaussQuadrature")
+@everywhere using FastGaussQuadrature
+@everywhere const nodes, weights = gausslaguerre(10)
 
 
 # Variables
