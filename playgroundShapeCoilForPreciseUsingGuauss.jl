@@ -9,7 +9,7 @@ addprocs(4)
 @everywhere const μ = 4pi*1e-7
 # Current
 @everywhere const I = 3  # 1[A]
-@everywhere const N = 500
+@everywhere const N = 400
 # Ingredient
 @everywhere const standardPhiOfConductor = 1.02e-3  # 1.02mm using AWG 20
 @everywhere const thicknessOfGFRPWall = 2e-2  # 2cm
@@ -22,6 +22,11 @@ addprocs(4)
 @everywhere const X0 = 0.1h
 @everywhere const Y0 = 0.1h
 @everywhere const Z0 = 0.1h
+# Gauss Integral Nodes and Weights
+@everywhere import Pkg
+@everywhere Pkg.add("FastGaussQuadrature")
+@everywhere using FastGaussQuadrature
+@everywhere const nodes, weights = gausslaguerre(10)
 
 
 # Variables
@@ -41,7 +46,7 @@ addprocs(4)
 @everywhere const standardRadiusOfConductor = standardPhiOfConductor/2
 @everywhere const conductorsPerLayer = div(thicknessOfGFRPWall, standardPhiOfConductor)
 # File Operation
-const dirName = "precise_I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round(h*100, sigdigits=2))cm_X0=$(round(X0/h, sigdigits=2))h_Y0=$(round(Y0/h, sigdigits=2))h_Z0=$(round(Z0/h, sigdigits=2))h_thickness=$(round(thicknessOfGFRPWall*100))cm_conductorPhi=$(round(standardPhiOfConductor*1e3, sigdigits=3))mm"
+const dirName = "preciseGauss_I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round(h*100, sigdigits=2))cm_X0=$(round(X0/h, sigdigits=2))h_Y0=$(round(Y0/h, sigdigits=2))h_Z0=$(round(Z0/h, sigdigits=2))h_thickness=$(round(thicknessOfGFRPWall*100))cm_conductorPhi=$(round(standardPhiOfConductor*1e3, sigdigits=3))mm"
 
 
 
@@ -110,40 +115,41 @@ end
 end
 
 
-@everywhere function numericalIntegrateOf(f::Function; upperLimit::Float64, lowerLimit::Float64, n::Integer)::Float64
-    sumOfIntervals = let
-        intervals = [ lowerLimit + k*(upperLimit-lowerLimit)/n for k in 1:n-1 ]
-        sum( f(k) for k in intervals )
-    end
-    return (upperLimit-lowerLimit)/n * ( (f(upperLimit)+f(lowerLimit))/2 + sumOfIntervals )
+@everywhere function numericalIntegrateOf(f::Function)::Float64
+    # sumOfIntervals = let
+    #     intervals = [ lowerLimit + k*(upperLimit-lowerLimit)/n for k in 1:n-1 ]
+    #     sum( f(k) for k in intervals )
+    # end
+    # return (upperLimit-lowerLimit)/n * ( (f(upperLimit)+f(lowerLimit))/2 + sumOfIntervals )
+    return sum( f.(nodes) .* f.(weights) )
 end
 
 
-@everywhere function c1(x::Float64, y::Float64, z::Float64; _x::Float64, _y::Float64, _z::Float64)::Float64
+@everywhere function c1(x::Float64, y::Float64, z::Float64; u::Float64, _y::Float64, _z::Float64)::Float64
     zVector = y - _y
-    denominator = ( (x-_x)^2 + (y-_y)^2 + (z-_z)^2 ) ^ (1.5)
-    return zVector/denominator
+    denominator = ( (x-l*u)^2 + (y-_y)^2 + (z-_z)^2 ) ^ (1.5)
+    return l*zVector/denominator
 end
 
 
-@everywhere function c2(x::Float64, y::Float64, z::Float64; _x::Float64, _y::Float64, _z::Float64)::Float64
+@everywhere function c2(x::Float64, y::Float64, z::Float64; u::Float64, _y::Float64, _z::Float64)::Float64
     zVector = -(y - _y)
-    denominator = ( (x-_x)^2 + (y-_y)^2 + (z-_z)^2 ) ^ (1.5)
-    return zVector/denominator
+    denominator = ( (x-l*u)^2 + (y-_y)^2 + (z-_z)^2 ) ^ (1.5)
+    return l*zVector/denominator
 end
 
 
-@everywhere function c3(x::Float64, y::Float64, z::Float64; R::Float64, phi::Float64, _z::Float64)::Float64
-    zVector = -R*( (y-R*sin(phi))sin(phi) + (x-l-R*cos(phi))cos(phi) )
-    denominator = ( (x-l-R*cos(phi))^2 + (y-R*sin(phi))^2 + (z-_z)^2 ) ^ (1.5)
-    return zVector/denominator
+@everywhere function c3(x::Float64, y::Float64, z::Float64; R::Float64, u::Float64, _z::Float64)::Float64
+    zVector = -R*( (y-R*sin(0.5pi*u))sin(0.5pi*u) + (x-l-R*cos(0.5pi*u))cos(0.5pi*u) )
+    denominator = ( (x-l-R*cos(0.5pi*u))^2 + (y-R*sin(0.5pi*u))^2 + (z-_z)^2 ) ^ (1.5)
+    return 0.5pi*zVector/denominator
 end
 
 
-@everywhere function c4(x::Float64, y::Float64, z::Float64; R::Float64, phi::Float64, _z::Float64)::Float64
-    zVector = -R*( (y-R*sin(phi))sin(phi) + (x+l-R*cos(phi))cos(phi) )
-    denominator = ( (x+l-R*cos(phi))^2 + (y-R*sin(phi))^2 + (z-_z)^2 ) ^ (1.5)
-    return zVector/denominator
+@everywhere function c4(x::Float64, y::Float64, z::Float64; R::Float64, u::Float64, _z::Float64)::Float64
+    zVector = -R*( (y-R*sin(0.5pi*(u+2)))sin(0.5pi*(u+2)) + (x+l-R*cos(0.5pi*(u+2)))cos(0.5pi*(u+2)) )
+    denominator = ( (x+l-R*cos(0.5pi*(u+2)))^2 + (y-R*sin(0.5pi*(u+2)))^2 + (z-_z)^2 ) ^ (1.5)
+    return 0.5pi*zVector/denominator
 end
 
 
@@ -151,15 +157,15 @@ end
     pars::ParsOfSource = ParsOfSource(n)
     local result::Float64 = 0
     # B from lower
-    result += numericalIntegrateOf((_x) -> c1(x, y, z; _x=_x, _y=pars.c1_y, _z=pars.c1_z); lowerLimit=-l, upperLimit=l, n=sourceIntervals)
-    result += numericalIntegrateOf((_x) -> c2(x, y, z; _x=_x, _y=pars.c1_y, _z=pars.c1_z); lowerLimit=-l, upperLimit=l, n=sourceIntervals)
-    result += numericalIntegrateOf((phi) -> c3(x, y, z; R=pars.c3_R, phi=phi, _z=pars.c3_z); lowerLimit=-pi/2, upperLimit=pi/2, n=sourceIntervals)
-    result += numericalIntegrateOf((phi) -> c4(x, y, z; R=pars.c4_R, phi=phi, _z=pars.c4_z); lowerLimit=pi/2, upperLimit=3pi/2, n=sourceIntervals)
+    result += numericalIntegrateOf((u) -> c1(x, y, z; u=u, _y=pars.c1_y, _z=pars.c1_z))
+    result += numericalIntegrateOf((u) -> c2(x, y, z; u=u, _y=pars.c1_y, _z=pars.c1_z))
+    result += numericalIntegrateOf((u) -> c3(x, y, z; R=pars.c3_R, u=u, _z=pars.c3_z))
+    result += numericalIntegrateOf((u) -> c4(x, y, z; R=pars.c4_R, u=u, _z=pars.c4_z))
     # B from upper
-    result += numericalIntegrateOf((_x) -> c1(x, y, z; _x=_x, _y=pars.c5_y, _z=pars.c5_z); lowerLimit=-l, upperLimit=l, n=sourceIntervals)
-    result += numericalIntegrateOf((_x) -> c2(x, y, z; _x=_x, _y=pars.c6_y, _z=pars.c6_z); lowerLimit=-l, upperLimit=l, n=sourceIntervals)
-    result += numericalIntegrateOf((phi) -> c3(x, y, z; R=pars.c7_R, phi=phi, _z=pars.c7_z); lowerLimit=-pi/2, upperLimit=pi/2, n=sourceIntervals)
-    result += numericalIntegrateOf((phi) -> c4(x, y, z; R=pars.c8_R, phi=phi, _z=pars.c8_z); lowerLimit=pi/2, upperLimit=3pi/2, n=sourceIntervals)
+    result += numericalIntegrateOf((u) -> c1(x, y, z; u=u, _y=pars.c5_y, _z=pars.c5_z))
+    result += numericalIntegrateOf((u) -> c2(x, y, z; u=u, _y=pars.c6_y, _z=pars.c6_z))
+    result += numericalIntegrateOf((u) -> c3(x, y, z; R=pars.c7_R, u=u, _z=pars.c7_z))
+    result += numericalIntegrateOf((u) -> c4(x, y, z; R=pars.c8_R, u=u, _z=pars.c8_z))
     return result
 end
 

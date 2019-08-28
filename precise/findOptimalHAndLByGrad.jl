@@ -325,7 +325,7 @@ let
         hChangingRate = abs(hNext - hCurrent)
         lChangingRate = abs(lNext - lCurrent)
 		# open files
-		resultFile = myOpen(;fileName="resultWhenEta=$(η)_Epsilon$(ϵ)_hInit=$(hInit)_lInit=$(lInit).csv", modes="a", dirName=dirName, csvHeader="lossFunctionResult,h,l,varRateX[%],varRateY[%],varRateY[%],meanBx[mT],meanBy[mT],meanBz[mT],hChangingRate,lChangingRate")
+		resultFile = myOpen(;fileName="resultWhenEta=$(η)_Epsilon$(ϵ)_hInit=$(hInit)_lInit=$(lInit).csv", modes="a", dirName=dirName, csvHeader="lossFunctionResult,h,l,varRateX[%],varRateY[%],varRateZ[%],meanBx[mT],meanBy[mT],meanBz[mT],hChangingRate,lChangingRate")
         # results storage
         write(resultFile, "$(result.lossFunctionResult),")
         write(resultFile, "$(hCurrent),")
