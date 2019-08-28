@@ -121,7 +121,7 @@ end
     #     sum( f(k) for k in intervals )
     # end
     # return (upperLimit-lowerLimit)/n * ( (f(upperLimit)+f(lowerLimit))/2 + sumOfIntervals )
-    return sum( f.(nodes) .* f.(weights) )
+    return sum( f.(nodes) .* weights )
 end
 
 
