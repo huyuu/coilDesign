@@ -135,52 +135,59 @@ struct ResultsOfEvolution
 end
 
 
-@everywhere function numericalIntegrateOf(f::Function; upperLimit::Float64, lowerLimit::Float64, n::Integer)::BVector
-    sumOfIntervals = let
-        temp::BVector = zeros(3)
-        intervals = [ lowerLimit + k*(upperLimit-lowerLimit)/n for k in 1:n-1 ]
-        for k in intervals
-            temp .+ f(k)
-        end
-        temp
+@everywhere function numericalIntegrateOf(f::Function)::BVector
+    # sumOfIntervals = let
+    #     temp::BVector = zeros(3)
+    #     intervals = [ lowerLimit + k*(upperLimit-lowerLimit)/n for k in 1:n-1 ]
+    #     for k in intervals
+    #         temp .+= f(k)
+    #     end
+    #     temp
+    # end
+    # return (upperLimit-lowerLimit)/n * ( (f(upperLimit) .+ f(lowerLimit))/2 .+ sumOfIntervals )
+    local result::BVector = [0, 0, 0]
+    for (node, weight) in (nodes, weights)
+        result += weight * f(node)
     end
-    return (upperLimit-lowerLimit)/n * ( (f(upperLimit) .+ f(lowerLimit))/2 .+ sumOfIntervals )
+    return result
 end
 
 
-@everywhere function c1(x::Float64, y::Float64, z::Float64; _x::Float64, _y::Float64, _z::Float64)::BVector
+@everywhere function c1(x::Float64, y::Float64, z::Float64; u::Float64, _y::Float64, _z::Float64, l::Float64)::BVector
     xVector::Float64 = 0
     yVector::Float64 = -(z-_z)
     zVector::Float64 = y - _y
-    denominator::Float64 = ( (x-_x)^2 + (y-_y)^2 + (z-_z)^2 ) ^ (1.5)
-    return [xVector, yVector/denominator, zVector/denominator]
+    denominator::Float64 = ( (x-l*u)^2 + (y-_y)^2 + (z-_z)^2 ) ^ (1.5)
+    return [xVector, l*yVector/denominator, l*zVector/denominator]
 end
 
 
-@everywhere function c2(x::Float64, y::Float64, z::Float64; _x::Float64, _y::Float64, _z::Float64)::BVector
+@everywhere function c2(x::Float64, y::Float64, z::Float64; u::Float64, _y::Float64, _z::Float64, l::Float64)::BVector
     xVector::Float64 = 0
     yVector::Float64 = z-_z
     zVector::Float64 = -(y - _y)
-    denominator::Float64 = ( (x-_x)^2 + (y-_y)^2 + (z-_z)^2 ) ^ (1.5)
-    return [xVector, yVector/denominator, zVector/denominator]
+    denominator::Float64 = ( (x-l*u)^2 + (y-_y)^2 + (z-_z)^2 ) ^ (1.5)
+    return [xVector, l*yVector/denominator, l*zVector/denominator]
 end
 
 
-@everywhere function c3(x::Float64, y::Float64, z::Float64; R::Float64, phi::Float64, _z::Float64, l::Float64)::BVector
+@everywhere function c3(x::Float64, y::Float64, z::Float64; R::Float64, u::Float64, _z::Float64, l::Float64)::BVector
+    phi::Float64 = 0.5pi*u
     xVector::Float64 = R*cos(phi)*(z-_z)
     yVector::Float64 = R*sin(phi)*(z-_z)
     zVector::Float64 = -R*( (y-R*sin(phi))sin(phi) + (x-l-R*cos(phi))cos(phi) )
     denominator::Float64 = ( (x-l-R*cos(phi))^2 + (y-R*sin(phi))^2 + (z-_z)^2 ) ^ (1.5)
-    return [xVector/denominator, yVector/denominator, zVector/denominator]
+    return 0.5pi * [xVector/denominator, yVector/denominator, zVector/denominator]
 end
 
 
-@everywhere function c4(x::Float64, y::Float64, z::Float64; R::Float64, phi::Float64, _z::Float64, l::Float64)::BVector
+@everywhere function c4(x::Float64, y::Float64, z::Float64; R::Float64, u::Float64, _z::Float64, l::Float64)::BVector
+    phi::Float64 = 0.5pi*(u+2)
     xVector::Float64 = R*cos(phi)*(z-_z)
     yVector::Float64 = R*sin(phi)*(z-_z)
     zVector::Float64 = -R*( (y-R*sin(phi))sin(phi) + (x+l-R*cos(phi))cos(phi) )
     denominator::Float64 = ( (x+l-R*cos(phi))^2 + (y-R*sin(phi))^2 + (z-_z)^2 ) ^ (1.5)
-    return [xVector/denominator, yVector/denominator, zVector/denominator]
+    return 0.5pi * [xVector/denominator, yVector/denominator, zVector/denominator]
 end
 
 
@@ -188,15 +195,15 @@ end
     pars::ParsOfSource = ParsOfSource(n, h)
     local result::BVector = [0, 0, 0]
     # B from lower
-    result .+= numericalIntegrateOf((_x) -> c1(x, y, z; _x=_x, _y=pars.c1_y, _z=pars.c1_z); lowerLimit=-l, upperLimit=l, n=sourceIntervals)
-    result .+= numericalIntegrateOf((_x) -> c2(x, y, z; _x=_x, _y=pars.c1_y, _z=pars.c1_z); lowerLimit=-l, upperLimit=l, n=sourceIntervals)
-    result .+= numericalIntegrateOf((phi) -> c3(x, y, z; R=pars.c3_R, phi=phi, _z=pars.c3_z, l=l); lowerLimit=-pi/2, upperLimit=pi/2, n=sourceIntervals)
-    result .+= numericalIntegrateOf((phi) -> c4(x, y, z; R=pars.c4_R, phi=phi, _z=pars.c4_z, l=l); lowerLimit=pi/2, upperLimit=3pi/2, n=sourceIntervals)
+    result .+= numericalIntegrateOf((u) -> c1(x, y, z; u=u, _y=pars.c1_y, _z=pars.c1_z, l=l))
+    result .+= numericalIntegrateOf((u) -> c2(x, y, z; u=u, _y=pars.c1_y, _z=pars.c1_z, l=l))
+    result .+= numericalIntegrateOf((u) -> c3(x, y, z; R=pars.c3_R, u=u, _z=pars.c3_z, l=l))
+    result .+= numericalIntegrateOf((u) -> c4(x, y, z; R=pars.c4_R, u=u, _z=pars.c4_z, l=l))
     # B from upper
-    result .+= numericalIntegrateOf((_x) -> c1(x, y, z; _x=_x, _y=pars.c5_y, _z=pars.c5_z); lowerLimit=-l, upperLimit=l, n=sourceIntervals)
-    result .+= numericalIntegrateOf((_x) -> c2(x, y, z; _x=_x, _y=pars.c6_y, _z=pars.c6_z); lowerLimit=-l, upperLimit=l, n=sourceIntervals)
-    result .+= numericalIntegrateOf((phi) -> c3(x, y, z; R=pars.c7_R, phi=phi, _z=pars.c7_z, l=l); lowerLimit=-pi/2, upperLimit=pi/2, n=sourceIntervals)
-    result .+= numericalIntegrateOf((phi) -> c4(x, y, z; R=pars.c8_R, phi=phi, _z=pars.c8_z, l=l); lowerLimit=pi/2, upperLimit=3pi/2, n=sourceIntervals)
+    result .+= numericalIntegrateOf((u) -> c1(x, y, z; u=u, _y=pars.c5_y, _z=pars.c5_z, l=l))
+    result .+= numericalIntegrateOf((u) -> c2(x, y, z; u=u, _y=pars.c6_y, _z=pars.c6_z, l=l))
+    result .+= numericalIntegrateOf((u) -> c3(x, y, z; R=pars.c7_R, u=u, _z=pars.c7_z, l=l))
+    result .+= numericalIntegrateOf((u) -> c4(x, y, z; R=pars.c8_R, u=u, _z=pars.c8_z, l=l))
     return result
 end
 
