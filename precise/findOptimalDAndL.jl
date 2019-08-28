@@ -1,6 +1,6 @@
 # This is the precise prediction for coil design.
 using Distributed
-addprocs(14)
+addprocs(4)
 @everywhere using Statistics
 
 
