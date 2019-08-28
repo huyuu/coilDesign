@@ -19,6 +19,29 @@ addprocs(4)
 @everywhere const X0 = 1e-2  # 1cm
 @everywhere const Y0 = 1e-2  # 1cm
 @everywhere const Z0 = 1e-2  # 1cm
+# Gauss Integral Nodes and Weights
+@everywhere const nodes = let
+    nodes = []
+    file = open("gaussNodes.csv", "r")
+    while !eof(file)
+        newString = readline(file)
+        newNode = parse(Float64, newString)
+        push!(nodes, newNode)
+    end
+    close(file)
+    nodes
+end
+@everywhere const weights = let
+    weights = []
+    file = open("gaussWeights.csv", "r")
+    while !eof(file)
+        newString = readline(file)
+        newweight = parse(Float64, newString)
+        push!(weights, newweight)
+    end
+    close(file)
+    weights
+end
 
 
 # Variables
@@ -34,11 +57,6 @@ addprocs(4)
 @everywhere const dUpperCoeff = 0.9
 @everywhere const lLowerCoeff = 1.0
 @everywhere const lUpperCoeff = 5.0
-# Gauss Integral Nodes and Weights
-@everywhere import Pkg
-@everywhere Pkg.add("FastGaussQuadrature")
-@everywhere using FastGaussQuadrature
-@everywhere const nodes, weights = gausslaguerre(10)
 
 
 # Children Variables

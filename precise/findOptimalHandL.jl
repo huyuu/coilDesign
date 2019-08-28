@@ -1,6 +1,6 @@
 # This is the precise prediction for coil design.
 using Distributed
-addprocs(4)
+addprocs(6)
 @everywhere using Statistics
 
 
@@ -33,10 +33,28 @@ addprocs(4)
 @everywhere const lLower = 2e-2 # 5cm
 @everywhere const lUpper = 50e-2 # 50cm
 # Gauss Integral Nodes and Weights
-@everywhere import Pkg
-@everywhere Pkg.add("FastGaussQuadrature")
-@everywhere using FastGaussQuadrature
-@everywhere const nodes, weights = gausslaguerre(10)
+@everywhere const nodes = let
+    nodes = []
+    file = open("gaussNodes.csv", "r")
+    while !eof(file)
+        newString = readline(file)
+        newNode = parse(Float64, newString)
+        push!(nodes, newNode)
+    end
+    close(file)
+    nodes
+end
+@everywhere const weights = let
+    weights = []
+    file = open("gaussWeights.csv", "r")
+    while !eof(file)
+        newString = readline(file)
+        newweight = parse(Float64, newString)
+        push!(weights, newweight)
+    end
+    close(file)
+    weights
+end
 
 
 # Children Variables
