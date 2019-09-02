@@ -1,8 +1,7 @@
 # This is the precise prediction for coil design.
 using Distributed
-addprocs(6)
+addprocs(4)
 @everywhere using Statistics
-
 
 # Constants
 # Physical Constants
@@ -17,23 +16,22 @@ addprocs(6)
 @everywhere const X0 = 1e-2  # 1cm
 @everywhere const Y0 = 1e-2  # 1cm
 @everywhere const Z0 = 1e-2  # 1cm
+# Coil Shape
+@everywhere const h = 5e-2 # 5cm
+@everywhere const l = 2h # 5cm
+@everywhere const R = h # 5cm
+@everywhere const d = 0.5h # 5cm
 
 
 # Variables
 
 # Measurement points
-@everywhere const sampleIntervals = 50
+@everywhere const sampleIntervals = 100
 @everywhere const samplePoints = sampleIntervals+1
-@everywhere const axisPoints = 100
-# Coil Shape
-@everywhere const hLower = 2e-2 # 5cm
-@everywhere const hUpper = 10e-2 # 10cm
-@everywhere const lLower = 2e-2 # 5cm
-@everywhere const lUpper = 50e-2 # 50cm
 # Gauss Integral Nodes and Weights
 @everywhere const nodes = let
     nodes = []
-    file = open("gaussNodes.csv", "r")
+    file = open("gaussNodesForPrecise.csv", "r")
     while !eof(file)
         newString = readline(file)
         newNode = parse(Float64, newString)
@@ -44,7 +42,7 @@ addprocs(6)
 end
 @everywhere const weights = let
     weights = []
-    file = open("gaussWeights.csv", "r")
+    file = open("_gaussWeightsForPrecise.csv", "r")
     while !eof(file)
         newString = readline(file)
         newWeight = parse(Float64, newString)
@@ -56,9 +54,6 @@ end
 
 
 # Children Variables
-
-@everywhere const hs = LinRange(hLower, hUpper, axisPoints)
-@everywhere const ls = LinRange(lLower, lUpper, axisPoints)
 @everywhere const standardRadiusOfConductor = standardPhiOfConductor/2
 @everywhere const conductorsPerLayer = div(thicknessOfGFRPWall, standardPhiOfConductor)
 # sample points
@@ -66,7 +61,7 @@ end
 @everywhere const ys = LinRange(-Y0, Y0, samplePoints)
 @everywhere const zs = LinRange(-Z0, Z0, samplePoints)
 # File Operation
-const dirName = "I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=From$(round(hLower*100, sigdigits=2))To$(round(hUpper*100, sigdigits=2))cm_l=From$(round(lLower*100, sigdigits=2))To$(round(lUpper*100, sigdigits=2))cm_conductorPhi=$(round(standardPhiOfConductor*1e3, sigdigits=3))mm"
+const dirName = "I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round(h*100, sigdigits=2))cm_l=$(round(l*100, sigdigits=2))cm_X0=$(round(X0*100, sigdigits=2))cm_Y0=$(round(Y0*100, sigdigits=2))cm_Z0=$(round(Z0*100, sigdigits=2))cm_conductorPhi=$(round(standardPhiOfConductor*1e3, sigdigits=3))mm"
 
 
 # Models
@@ -284,54 +279,16 @@ function myOpen(;fileName::String, modes::String="w", dirName::Union{String, Not
 end
 
 
-function storeSamplePoints()
-    hSampleFile = myOpen(;fileName="hSamples.csv", dirName=dirName, csvHeader="h(m)")
-    lSampleFile = myOpen(;fileName="lSamples.csv", dirName=dirName, csvHeader="l(m)")
-    for h in hs
-        write(hSampleFile, "$(round(h, sigdigits=5))\n")
-    end
-    for l in ls
-        write(lSampleFile, "$(round(l, sigdigits=5))\n")
-    end
-    close(hSampleFile)
-    close(lSampleFile)
-end
-
-
 # Main
 
-storeSamplePoints()
-
 let
-	for (hIndex, hValue) in enumerate(hs), (lIndex, lValue) in enumerate(ls)
-        # calculation
-        result = @time calculateResultWhen(; h=hValue, l=lValue)
-		# open files
-		meanBxFile = myOpen(;fileName="meanBx.csv", modes="a", dirName=dirName, csvHeader=nothing)
-		meanByFile = myOpen(;fileName="meanBy.csv", modes="a", dirName=dirName, csvHeader=nothing)
-		meanBzFile = myOpen(;fileName="meanBz.csv", modes="a", dirName=dirName, csvHeader=nothing)
-		varRateXFile = myOpen(;fileName="varriationRateX.csv", modes="a", dirName=dirName, csvHeader=nothing)
-		varRateYFile = myOpen(;fileName="varriationRateY.csv", modes="a", dirName=dirName, csvHeader=nothing)
-		varRateZFile = myOpen(;fileName="varriationRateZ.csv", modes="a", dirName=dirName, csvHeader=nothing)
-        # results storage
-		if lIndex == length(ls)
-			write(meanBxFile, "$(result.meanBVector[1])\n")
-			write(meanByFile, "$(result.meanBVector[2])\n")
-			write(meanBzFile, "$(result.meanBVector[3])\n")
-            write(varRateXFile, "$(result.varRateVector[1])\n")
-            write(varRateYFile, "$(result.varRateVector[2])\n")
-            write(varRateZFile, "$(result.varRateVector[3])\n")
-        else
-            write(meanBxFile, "$(result.meanBVector[1]),")
-            write(meanByFile, "$(result.meanBVector[2]),")
-            write(meanBzFile, "$(result.meanBVector[3]),")
-            write(varRateXFile, "$(result.varRateVector[1]),")
-            write(varRateYFile, "$(result.varRateVector[2]),")
-            write(varRateZFile, "$(result.varRateVector[3]),")
-		end
-        # closing files
-        map((meanBxFile, meanByFile, meanBzFile, varRateXFile, varRateYFile, varRateZFile)) do file
-            close(file)
-        end
-	end
+    result = @time calculateResultWhen(; h=h, l=l)
+    file = myOpen(;fileName="results.csv", modes="w", dirName=dirName, csvHeader="varRateX[%],varRateY[%],varRateY[%],meanBx[mT],meanBy[mT],meanBz[mT]")
+    write(file, "$(result.varRateVector[1]*100),")
+    write(file, "$(result.varRateVector[2]*100),")
+    write(file, "$(result.varRateVector[3]*100),")
+    write(file, "$(result.meanBVector[1]*1000),")
+    write(file, "$(result.meanBVector[2]*1000),")
+    write(file, "$(result.meanBVector[3]*1000)\n")
+    close(file)
 end
