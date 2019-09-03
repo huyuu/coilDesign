@@ -22,19 +22,40 @@ addprocs(4)
 @everywhere const X0 = 1e-2
 @everywhere const Y0 = 1e-2
 @everywhere const Z0 = 1e-2
+# # Gauss Integral Nodes and Weights
+# @everywhere import Pkg
+# @everywhere Pkg.add("FastGaussQuadrature")
+# @everywhere using FastGaussQuadrature
+# @everywhere const nodes, weights = gausslaguerre(100)
 # Gauss Integral Nodes and Weights
-@everywhere import Pkg
-@everywhere Pkg.add("FastGaussQuadrature")
-@everywhere using FastGaussQuadrature
-@everywhere const nodes, weights = gausslaguerre(100)
+@everywhere const nodes = let
+    nodes = []
+    open("precise/gaussNodesForPrecise.csv", "r") do file
+        lines = readlines(file)
+        for line in lines
+            newNode = parse(Float64, line)
+            push!(nodes, newNode)
+        end
+    end
+    nodes
+end
+@everywhere const weights = let
+    weights = []
+    open("precise/gaussNodesForPrecise.csv", "r") do file
+        lines = readlines(file)
+        for line in lines
+            newWeight = parse(Float64, line)
+            push!(weights, newWeight)
+        end
+    end
+    weights
+end
 
 
 # Variables
 
-# Intervals into which a current source loop is cut, ex: c1. Should not be too small otherwise divergence condition could be raised."
-@everywhere const sourceIntervals = 100
 # Measurement points
-@everywhere const sampleIntervals = 100
+@everywhere const sampleIntervals = 10
 @everywhere const samplePoints = sampleIntervals+1
 
 

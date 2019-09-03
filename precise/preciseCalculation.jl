@@ -26,7 +26,7 @@ addprocs(4)
 # Variables
 
 # Measurement points
-@everywhere const sampleIntervals = 100
+@everywhere const sampleIntervals = 20
 @everywhere const samplePoints = sampleIntervals+1
 # Gauss Integral Nodes and Weights
 @everywhere const nodes = let
@@ -92,7 +92,7 @@ end
 @everywhere ParsOfSource(n::Int, h::Float64) = let
     index::PositionIndex = PositionIndex(n)
 
-    d = 0.5h
+	global d
     c1_y =  -h - standardPhiOfConductor*(index.layer-1) - standardRadiusOfConductor
     c1_z = -d + index.centerDistance * standardPhiOfConductor
     c2_y = h + standardPhiOfConductor*(index.layer-1) + standardRadiusOfConductor
@@ -137,7 +137,7 @@ struct ResultsOfMeanVarRate
     varRateVector::BVector
 end
 ResultsOfMeanVarRate(meanBVector::BVector, minBVector::BVector, maxBVector::BVector) = let
-    varRateVector = (maxBVector .- minBVector) ./ meanBVector
+    varRateVector = (maxBVector - minBVector) / meanBVector
     ResultsOfMeanVarRate(meanBVector, varRateVector)
 end
 
@@ -219,9 +219,9 @@ end
 
 function calculateResultWhen(; h::Float64, l::Float64)::ResultsOfMeanVarRate
 	# init results
-    meanBVector = zeros(3)
-    minBVector = ones(3)
-    maxBVector = zeros(3)
+    meanBVector::BVector = zeros(3)
+    minBVector::BVector = ones(3)
+    maxBVector::BVector = zeros(3)
 	# for calculation
     totalSamplePoints = length(xs)*length(ys)*length(zs)
     futureBVectorsInCube::Array{Future} = []
@@ -232,15 +232,18 @@ function calculateResultWhen(; h::Float64, l::Float64)::ResultsOfMeanVarRate
     end
 
     map(futureBVectorsInCube) do futureBVector
-        bVector = fetch(futureBVector)
-        meanBVector .+= bVector
+        bVector::BVector = fetch(futureBVector)
+        bVector = abs.(bVector)
+        meanBVector += bVector
         map(1:3) do i
             minBVector[i] = bVector[i] < minBVector[i] ? bVector[i] : minBVector[i]
             maxBVector[i] = bVector[i] > maxBVector[i] ? bVector[i] : maxBVector[i]
         end
     end
-    meanBVector ./= totalSamplePoints
+    meanBVector /= totalSamplePoints
 
+	println("maxBVector = $(maxBVector)")
+	println("minBVector = $(minBVector)")
     return ResultsOfMeanVarRate(meanBVector, minBVector, maxBVector)
 end
 
@@ -283,7 +286,7 @@ end
 
 let
     result = @time calculateResultWhen(; h=h, l=l)
-    resultFile = myOpen(;fileName="results.csv", modes="w", dirName=dirName, csvHeader="varRateX[%],varRateY[%],varRateY[%],meanBx[mT],meanBy[mT],meanBz[mT]")
+    resultFile = myOpen(;fileName="resultsWhenSamples=$(sampleIntervals).csv", modes="w", dirName=dirName, csvHeader="varRateX[%],varRateY[%],varRateZ[%],meanBx[mT],meanBy[mT],meanBz[mT]")
     write(resultFile, "$(result.varRateVector[1]*100),")
     write(resultFile, "$(result.varRateVector[2]*100),")
     write(resultFile, "$(result.varRateVector[3]*100),")
