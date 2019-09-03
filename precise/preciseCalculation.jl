@@ -31,24 +31,24 @@ addprocs(4)
 # Gauss Integral Nodes and Weights
 @everywhere const nodes = let
     nodes = []
-    file = open("gaussNodesForPrecise.csv", "r")
-    while !eof(file)
-        newString = readline(file)
-        newNode = parse(Float64, newString)
-        push!(nodes, newNode)
+    open("gaussNodesForPrecise.csv", "r") do file
+        lines = readlines(file)
+        for line in lines
+            newNode = parse(Float64, line)
+            push!(nodes, newNode)
+        end
     end
-    close(file)
     nodes
 end
 @everywhere const weights = let
     weights = []
-    file = open("_gaussWeightsForPrecise.csv", "r")
-    while !eof(file)
-        newString = readline(file)
-        newWeight = parse(Float64, newString)
-        push!(weights, newWeight)
+    open("gaussNodesForPrecise.csv", "r") do file
+        lines = readlines(file)
+        for line in lines
+            newWeight = parse(Float64, line)
+            push!(weights, newWeight)
+        end
     end
-    close(file)
     weights
 end
 
@@ -283,12 +283,12 @@ end
 
 let
     result = @time calculateResultWhen(; h=h, l=l)
-    file = myOpen(;fileName="results.csv", modes="w", dirName=dirName, csvHeader="varRateX[%],varRateY[%],varRateY[%],meanBx[mT],meanBy[mT],meanBz[mT]")
-    write(file, "$(result.varRateVector[1]*100),")
-    write(file, "$(result.varRateVector[2]*100),")
-    write(file, "$(result.varRateVector[3]*100),")
-    write(file, "$(result.meanBVector[1]*1000),")
-    write(file, "$(result.meanBVector[2]*1000),")
-    write(file, "$(result.meanBVector[3]*1000)\n")
-    close(file)
+    resultFile = myOpen(;fileName="results.csv", modes="w", dirName=dirName, csvHeader="varRateX[%],varRateY[%],varRateY[%],meanBx[mT],meanBy[mT],meanBz[mT]")
+    write(resultFile, "$(result.varRateVector[1]*100),")
+    write(resultFile, "$(result.varRateVector[2]*100),")
+    write(resultFile, "$(result.varRateVector[3]*100),")
+    write(resultFile, "$(result.meanBVector[1]*1000),")
+    write(resultFile, "$(result.meanBVector[2]*1000),")
+    write(resultFile, "$(result.meanBVector[3]*1000)\n")
+    close(resultFile)
 end

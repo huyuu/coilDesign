@@ -19,14 +19,14 @@ addprocs(4)
 @everywhere const d = 0.5h
 @everywhere const l = 2h
 # Measurement Area
-@everywhere const X0 = 0.1h
-@everywhere const Y0 = 0.1h
-@everywhere const Z0 = 0.1h
+@everywhere const X0 = 1e-2
+@everywhere const Y0 = 1e-2
+@everywhere const Z0 = 1e-2
 # Gauss Integral Nodes and Weights
 @everywhere import Pkg
 @everywhere Pkg.add("FastGaussQuadrature")
 @everywhere using FastGaussQuadrature
-@everywhere const nodes, weights = gausslaguerre(10)
+@everywhere const nodes, weights = gausslaguerre(100)
 
 
 # Variables
@@ -46,7 +46,7 @@ addprocs(4)
 @everywhere const standardRadiusOfConductor = standardPhiOfConductor/2
 @everywhere const conductorsPerLayer = div(thicknessOfGFRPWall, standardPhiOfConductor)
 # File Operation
-const dirName = "preciseGauss_I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round(h*100, sigdigits=2))cm_X0=$(round(X0/h, sigdigits=2))h_Y0=$(round(Y0/h, sigdigits=2))h_Z0=$(round(Z0/h, sigdigits=2))h_thickness=$(round(thicknessOfGFRPWall*100))cm_conductorPhi=$(round(standardPhiOfConductor*1e3, sigdigits=3))mm"
+const dirName = "preciseGauss_I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round(h*100, sigdigits=2))cm_X0=$(round(X0*100, sigdigits=2))cm_Y0=$(round(Y0*100, sigdigits=2))cm_Z0=$(round(Z0*100, sigdigits=2))cm_thickness=$(round(thicknessOfGFRPWall*100))cm_conductorPhi=$(round(standardPhiOfConductor*1e3, sigdigits=3))mm"
 
 
 
