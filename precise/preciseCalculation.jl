@@ -13,9 +13,9 @@ addprocs(4)
 @everywhere const standardPhiOfConductor = 1.02e-3  # 1.02mm using AWG 20
 @everywhere const thicknessOfGFRPWall = 2e-2  # 2cm
 # Measurement Area
-@everywhere const X0 = 1e-2  # 1cm
-@everywhere const Y0 = 1e-2  # 1cm
-@everywhere const Z0 = 1e-2  # 1cm
+@everywhere const X0 = 2.5e-2  # 1cm
+@everywhere const Y0 = 2.5e-2  # 1cm
+@everywhere const Z0 = 2.5e-2  # 1cm
 # Coil Shape
 @everywhere const h = 5e-2 # 5cm
 @everywhere const l = 2h # 5cm
@@ -26,7 +26,7 @@ addprocs(4)
 # Variables
 
 # Measurement points
-@everywhere const sampleIntervals = 20
+@everywhere const sampleIntervals = 10
 @everywhere const samplePoints = sampleIntervals+1
 # Gauss Integral Nodes and Weights
 @everywhere const nodes = let
@@ -42,7 +42,7 @@ addprocs(4)
 end
 @everywhere const weights = let
     weights = []
-    open("gaussNodesForPrecise.csv", "r") do file
+    open("gaussWeightsForPrecise.csv", "r") do file
         lines = readlines(file)
         for line in lines
             newWeight = parse(Float64, line)
@@ -137,7 +137,7 @@ struct ResultsOfMeanVarRate
     varRateVector::BVector
 end
 ResultsOfMeanVarRate(meanBVector::BVector, minBVector::BVector, maxBVector::BVector) = let
-    varRateVector = (maxBVector - minBVector) / meanBVector
+    varRateVector = (maxBVector .- minBVector) ./ meanBVector
     ResultsOfMeanVarRate(meanBVector, varRateVector)
 end
 
@@ -219,9 +219,9 @@ end
 
 function calculateResultWhen(; h::Float64, l::Float64)::ResultsOfMeanVarRate
 	# init results
-    meanBVector::BVector = zeros(3)
-    minBVector::BVector = ones(3)
-    maxBVector::BVector = zeros(3)
+    meanBVector = zeros(3)
+    minBVector = ones(3)
+    maxBVector = zeros(3)
 	# for calculation
     totalSamplePoints = length(xs)*length(ys)*length(zs)
     futureBVectorsInCube::Array{Future} = []
@@ -232,15 +232,15 @@ function calculateResultWhen(; h::Float64, l::Float64)::ResultsOfMeanVarRate
     end
 
     map(futureBVectorsInCube) do futureBVector
-        bVector::BVector = fetch(futureBVector)
+        bVector = fetch(futureBVector)
         bVector = abs.(bVector)
-        meanBVector += bVector
+        meanBVector .+= bVector
         map(1:3) do i
             minBVector[i] = bVector[i] < minBVector[i] ? bVector[i] : minBVector[i]
             maxBVector[i] = bVector[i] > maxBVector[i] ? bVector[i] : maxBVector[i]
         end
     end
-    meanBVector /= totalSamplePoints
+    meanBVector ./= totalSamplePoints
 
 	println("maxBVector = $(maxBVector)")
 	println("minBVector = $(minBVector)")

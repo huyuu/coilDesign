@@ -16,9 +16,9 @@ addprocs(4)
 # Coil Shape
 @everywhere const h = 5e-2
 # Measurement Area
-@everywhere const X0 = 1e-2  # 1cm
-@everywhere const Y0 = 1e-2  # 1cm
-@everywhere const Z0 = 1e-2  # 1cm
+@everywhere const X0 = 0.5e-2  # 1cm
+@everywhere const Y0 = 0.5e-2  # 1cm
+@everywhere const Z0 = 0.5e-2  # 1cm
 # Gauss Integral Nodes and Weights
 @everywhere const nodes = let
     nodes = []
@@ -46,10 +46,8 @@ end
 
 # Variables
 
-# Intervals into which a current source loop is cut, ex: c1. Should not be too small otherwise divergence condition could be raised."
-@everywhere const sourceIntervals = 100
 # Measurement points
-@everywhere const sampleIntervals = 50
+@everywhere const sampleIntervals = 30
 @everywhere const samplePoints = sampleIntervals+1
 @everywhere const axisPoints = 100
 # Coil Shape
@@ -244,6 +242,7 @@ function calculateResultWhen(; d::Float64, l::Float64)::ResultsOfMeanVarRate
 
     map(futureBVectorsInCube) do futureBVector
         bVector = fetch(futureBVector)
+        bVector = abs.(bVector)
         meanBVector .+= bVector
         map(1:3) do i
             minBVector[i] = bVector[i] < minBVector[i] ? bVector[i] : minBVector[i]

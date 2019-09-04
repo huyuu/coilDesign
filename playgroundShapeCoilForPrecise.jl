@@ -9,7 +9,7 @@ addprocs(4)
 @everywhere const μ = 4pi*1e-7
 # Current
 @everywhere const I = 3  # 1[A]
-@everywhere const N = 500
+@everywhere const N = 400
 # Ingredient
 @everywhere const standardPhiOfConductor = 1.02e-3  # 1.02mm using AWG 20
 @everywhere const thicknessOfGFRPWall = 2e-2  # 2cm
@@ -19,9 +19,9 @@ addprocs(4)
 @everywhere const d = 0.5h
 @everywhere const l = 2h
 # Measurement Area
-@everywhere const X0 = 0.1h
-@everywhere const Y0 = 0.1h
-@everywhere const Z0 = 0.1h
+@everywhere const X0 = 0.2h
+@everywhere const Y0 = 0.2h
+@everywhere const Z0 = 0.2h
 
 
 # Variables

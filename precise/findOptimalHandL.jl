@@ -1,6 +1,6 @@
 # This is the precise prediction for coil design.
 using Distributed
-addprocs(6)
+addprocs(4)
 @everywhere using Statistics
 
 
@@ -14,15 +14,15 @@ addprocs(6)
 @everywhere const standardPhiOfConductor = 1.02e-3  # 1.02mm using AWG 20
 @everywhere const thicknessOfGFRPWall = 2e-2  # 2cm
 # Measurement Area
-@everywhere const X0 = 1e-2  # 1cm
-@everywhere const Y0 = 1e-2  # 1cm
-@everywhere const Z0 = 1e-2  # 1cm
+@everywhere const X0 = 0.5e-2  # 2X0 = 1cm
+@everywhere const Y0 = 0.5e-2  # 2Y0 = 1cm
+@everywhere const Z0 = 0.5e-2  # 2Z0 = 1cm
 
 
 # Variables
 
 # Measurement points
-@everywhere const sampleIntervals = 50
+@everywhere const sampleIntervals = 10
 @everywhere const samplePoints = sampleIntervals+1
 @everywhere const axisPoints = 100
 # Coil Shape
@@ -238,6 +238,7 @@ function calculateResultWhen(; h::Float64, l::Float64)::ResultsOfMeanVarRate
 
     map(futureBVectorsInCube) do futureBVector
         bVector = fetch(futureBVector)
+        bVector = abs.(bVector)
         meanBVector .+= bVector
         map(1:3) do i
             minBVector[i] = bVector[i] < minBVector[i] ? bVector[i] : minBVector[i]
