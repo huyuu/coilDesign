@@ -26,7 +26,7 @@ addprocs(4)
 # Variables
 
 # Measurement points
-@everywhere const sampleIntervals = 10
+@everywhere const sampleIntervals = 12
 @everywhere const samplePoints = sampleIntervals+1
 # Gauss Integral Nodes and Weights
 @everywhere const nodes = let
@@ -225,10 +225,20 @@ function calculateResultWhen(; h::Float64, l::Float64)::ResultsOfMeanVarRate
 	# for calculation
     totalSamplePoints = length(xs)*length(ys)*length(zs)
     futureBVectorsInCube::Array{Future} = []
+    futureBVectorsInZeroPlane::Array{Future} = []
+    futureBVectorsInTopPlane::Array{Future} = []
 
-    for (xIndex, xValue) in enumerate(xs), (yIndex, yValue) in enumerate(ys), (zIndex, zValue) in enumerate(zs)
-        future = @spawn calculateBAtPoint(xValue, yValue, zValue; h=h, l=l)
+    for z in zs[1:end-1], x in xs, y in ys
+        future = @spawn calculateBAtPoint(x, y, z; h=h, l=l)
         push!(futureBVectorsInCube, future)
+    end
+    for x in xs, y in ys
+        future = @spawn calculateBAtPoint(x, y, zs[1]; h=h, l=l)
+        push!(futureBVectorsInZeroPlane, future)
+    end
+    for x in xs, y in ys
+        future = @spawn calculateBAtPoint(x, y, zs[end]; h=h, l=l)
+        push!(futureBVectorsInTopPlane, future)
     end
 
     map(futureBVectorsInCube) do futureBVector
@@ -240,7 +250,37 @@ function calculateResultWhen(; h::Float64, l::Float64)::ResultsOfMeanVarRate
             maxBVector[i] = bVector[i] > maxBVector[i] ? bVector[i] : maxBVector[i]
         end
     end
+    zeroPlaneBxFile::IOStream = myOpen(;fileName="zeroPlaneBx.csv", modes="a", dirName=dirName, csvHeader=nothing)
+    zeroPlaneByFile::IOStream = myOpen(;fileName="zeroPlaneBy.csv", modes="a", dirName=dirName, csvHeader=nothing)
+    zeroPlaneBzFile::IOStream = myOpen(;fileName="zeroPlaneBz.csv", modes="a", dirName=dirName, csvHeader=nothing)
+    topPlaneBxFile::IOStream = myOpen(;fileName="topPlaneBx.csv", modes="a", dirName=dirName, csvHeader=nothing)
+    topPlaneByFile::IOStream = myOpen(;fileName="topPlaneBy.csv", modes="a", dirName=dirName, csvHeader=nothing)
+    topPlaneBzFile::IOStream = myOpen(;fileName="topPlaneBz.csv", modes="a", dirName=dirName, csvHeader=nothing)
+    map(enumerate(futureBVectorsInZeroPlane)) do (index, futureBVector)
+        bVector = fetch(futureBVector)
+        bVector = abs.(bVector)
+        meanBVector .+= bVector
+        map(1:3) do i
+            minBVector[i] = bVector[i] < minBVector[i] ? bVector[i] : minBVector[i]
+            maxBVector[i] = bVector[i] > maxBVector[i] ? bVector[i] : maxBVector[i]
+        end
+        writeRawResults(; fileX=zeroPlaneBxFile, fileY=zeroPlaneByFile, fileZ=zeroPlaneBzFile, bVector=bVector, index=index)
+    end
+    map(enumerate(futureBVectorsInTopPlane)) do (index, futureBVector)
+        bVector = fetch(futureBVector)
+        bVector = abs.(bVector)
+        meanBVector .+= bVector
+        map(1:3) do i
+            minBVector[i] = bVector[i] < minBVector[i] ? bVector[i] : minBVector[i]
+            maxBVector[i] = bVector[i] > maxBVector[i] ? bVector[i] : maxBVector[i]
+        end
+        writeRawResults(; fileX=topPlaneBxFile, fileY=topPlaneByFile, fileZ=topPlaneBzFile, bVector=bVector, index=index)
+    end
     meanBVector ./= totalSamplePoints
+    # close files
+    map([zeroPlaneBxFile, zeroPlaneByFile, zeroPlaneBzFile, topPlaneBxFile, topPlaneByFile, topPlaneBzFile]) do file
+        close(file)
+    end
 
 	println("maxBVector = $(maxBVector)")
 	println("minBVector = $(minBVector)")
@@ -282,10 +322,43 @@ function myOpen(;fileName::String, modes::String="w", dirName::Union{String, Not
 end
 
 
+function storeSamplePoints()
+    xSampleFile = myOpen(;fileName="xSamples.csv", dirName=dirName, csvHeader="x(m)")
+    ySampleFile = myOpen(;fileName="ySamples.csv", dirName=dirName, csvHeader="y(m)")
+    for x in xs
+        write(xSampleFile, "$(round(x, sigdigits=5))\n")
+    end
+    for y in ys
+        write(ySampleFile, "$(round(y, sigdigits=5))\n")
+    end
+    close(xSampleFile)
+    close(ySampleFile)
+end
+
+
+function writeRawResults(; fileX::IOStream, fileY::IOStream, fileZ::IOStream, bVector::BVector, index::Int)
+    endIndices = length(ys)* collect(1:length(xs))
+    didReachEndLine = index in endIndices
+    if didReachEndLine
+        write(fileX, "$(bVector[1])\n")
+        write(fileY, "$(bVector[2])\n")
+        write(fileZ, "$(bVector[3])\n")
+    else
+        write(fileX, "$(bVector[1]),")
+        write(fileY, "$(bVector[2]),")
+        write(fileZ, "$(bVector[3]),")
+    end
+end
+
+
 # Main
 
 let
+    # calculation
     result = @time calculateResultWhen(; h=h, l=l)
+    # store sample points
+    storeSamplePoints()
+    # store results
     resultFile = myOpen(;fileName="resultsWhenSamples=$(sampleIntervals).csv", modes="w", dirName=dirName, csvHeader="varRateX[%],varRateY[%],varRateZ[%],meanBx[mT],meanBy[mT],meanBz[mT]")
     write(resultFile, "$(result.varRateVector[1]*100),")
     write(resultFile, "$(result.varRateVector[2]*100),")
