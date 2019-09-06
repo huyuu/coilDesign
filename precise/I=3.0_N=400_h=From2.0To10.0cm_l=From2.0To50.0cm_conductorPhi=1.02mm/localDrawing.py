@@ -32,17 +32,44 @@ for filePath in resultFilePaths:
 
 xData = data['hSamples.csv']
 yData = data['lSamples.csv']
-filePathsToPlot = ['meanBz.csv', 'varriationRateZ.csv']
+filePathsToPlot = ['meanBx.csv', 'meanBz.csv', 'varriationRateX.csv', 'varriationRateZ.csv']
 zDatas = [ (filePath, data[filePath]) for filePath in filePathsToPlot ]
 
 fig = pl.figure()
 ax = pl.axes(projection='3d')
 ax.set_xlabel('h [cm]', fontsize=22, labelpad=24)
 ax.set_ylabel('l [cm]', fontsize=22, labelpad=24)
+ax.set_zlabel('meanBx [mT]', fontsize=22, labelpad=24)
+ax.tick_params(labelsize=22)
+zData = data['meanBx.csv']
+ax.plot_surface(xData.values*100, yData.values.reshape(1, len(yData))*100, zData.values*1000, cmap='Blues')
+# xDataForScatter, yDataForScatter = nu.meshgrid(xData.values*100, yData.values*100)
+# zDataForScatter = data['meanBz.csv'].values.ravel()*1000
+# ax.scatter3D(xDataForScatter.ravel(), yDataForScatter.ravel(), zDataForScatter, c=zDataForScatter, cmap='Reds')
+pl.show()
+
+ax = pl.axes(projection='3d')
+ax.set_xlabel('h [cm]', fontsize=22, labelpad=24)
+ax.set_ylabel('l [cm]', fontsize=22, labelpad=24)
+ax.set_zlabel('varRateX [%]', fontsize=22, labelpad=24)
+ax.tick_params(labelsize=22)
+zData = data['varriationRateX.csv']
+ax.plot_surface(xData.values*100, yData.values.reshape(1, len(yData))*100, zData.values*100, cmap='Blues')
+# xDataForScatter, yDataForScatter = nu.meshgrid(xData.values*100, yData.values*100)
+# zDataForScatter = data['varriationRateZ.csv'].values.ravel()*100
+# ax.scatter3D(xDataForScatter.ravel(), yDataForScatter.ravel(), zDataForScatter, c=zDataForScatter, cmap='Reds')
+pl.show()
+
+ax = pl.axes(projection='3d')
+ax.set_xlabel('h [cm]', fontsize=22, labelpad=24)
+ax.set_ylabel('l [cm]', fontsize=22, labelpad=24)
 ax.set_zlabel('meanBz [mT]', fontsize=22, labelpad=24)
 ax.tick_params(labelsize=22)
-xDataForScatter, yDataForScatter = nu.meshgrid(xData.values*100, yData.values*100)
-ax.scatter3D(xDataForScatter, yDataForScatter, data['meanBz.csv'].values*1000)
+zData = data['meanBz.csv']
+ax.plot_surface(xData.values*100, yData.values.reshape(1, len(yData))*100, zData.values*1000, cmap='Reds')
+# xDataForScatter, yDataForScatter = nu.meshgrid(xData.values*100, yData.values*100)
+# zDataForScatter = data['varriationRateZ.csv'].values.ravel()*100
+# ax.scatter3D(xDataForScatter.ravel(), yDataForScatter.ravel(), zDataForScatter, c=zDataForScatter, cmap='Reds')
 pl.show()
 
 ax = pl.axes(projection='3d')
@@ -50,6 +77,9 @@ ax.set_xlabel('h [cm]', fontsize=22, labelpad=24)
 ax.set_ylabel('l [cm]', fontsize=22, labelpad=24)
 ax.set_zlabel('varRateZ [%]', fontsize=22, labelpad=24)
 ax.tick_params(labelsize=22)
-xDataForScatter, yDataForScatter = nu.meshgrid(xData.values*100, yData.values*100)
-ax.scatter3D(xDataForScatter, yDataForScatter, data['varriationRateZ.csv'].values*100)
+zData = data['varriationRateZ.csv']
+ax.plot_surface(xData.values*100, yData.values.reshape(1, len(yData))*100, zData.values*100, cmap='Reds')
+# xDataForScatter, yDataForScatter = nu.meshgrid(xData.values*100, yData.values*100)
+# zDataForScatter = data['varriationRateZ.csv'].values.ravel()*100
+# ax.scatter3D(xDataForScatter.ravel(), yDataForScatter.ravel(), zDataForScatter, c=zDataForScatter, cmap='Reds')
 pl.show()

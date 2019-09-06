@@ -43,8 +43,9 @@ for (name, zData) in zDatas:
     name = name.split('.')[0]
     ax.set_zlabel(f'{name}', fontsize=22, labelpad=24)
     ax.tick_params(labelsize=22)
-
-    # ax.plot_surface(xData.values, yData.values.reshape(1, len(yData)), zData.values, rstride=20, cstride=20, cmap='Reds')
-    xDataForScatter, yDataForScatter = nu.meshgrid(xData.values, yData.values)
-    ax.scatter3D(xDataForScatter, yDataForScatter, zData.values)
+    # for surface plot
+    ax.plot_surface(xData.values, yData.values.reshape(1, len(yData)), zData.values, rstride=20, cstride=20, cmap='Reds')
+    # for scatter plot
+    xDataForScatter, yDataForScatter = nu.meshgrid(xData.values*100, yData.values*100)
+    ax.scatter3D(xDataForScatter.ravel(), yDataForScatter.ravel(), zData.values.ravel(), c=zDataForScatter, cmap='Reds')
     pl.show()
