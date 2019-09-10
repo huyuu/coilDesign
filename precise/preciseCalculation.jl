@@ -26,7 +26,7 @@ addprocs(4)
 # Variables
 
 # Measurement points
-@everywhere const sampleIntervals = 12
+@everywhere const sampleIntervals = 20
 @everywhere const samplePoints = sampleIntervals+1
 # Gauss Integral Nodes and Weights
 @everywhere const nodes = let
@@ -59,7 +59,7 @@ end
 # sample points
 @everywhere const xs = LinRange(-X0, X0, samplePoints)
 @everywhere const ys = LinRange(-Y0, Y0, samplePoints)
-@everywhere const zs = LinRange(-Z0, Z0, samplePoints)
+@everywhere const zs = LinRange(0, Z0, samplePoints)
 # File Operation
 const dirName = "I=$(round(I, sigdigits=2))_N=$(round(Int, N))_h=$(round(h*100, sigdigits=2))cm_l=$(round(l*100, sigdigits=2))cm_X0=$(round(X0*100, sigdigits=2))cm_Y0=$(round(Y0*100, sigdigits=2))cm_Z0=$(round(Z0*100, sigdigits=2))cm_conductorPhi=$(round(standardPhiOfConductor*1e3, sigdigits=3))mm"
 
@@ -228,7 +228,7 @@ function calculateResultWhen(; h::Float64, l::Float64)::ResultsOfMeanVarRate
     futureBVectorsInZeroPlane::Array{Future} = []
     futureBVectorsInTopPlane::Array{Future} = []
 
-    for z in zs[1:end-1], x in xs, y in ys
+    for z in zs[2:end-1], x in xs, y in ys
         future = @spawn calculateBAtPoint(x, y, z; h=h, l=l)
         push!(futureBVectorsInCube, future)
     end
