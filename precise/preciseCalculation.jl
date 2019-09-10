@@ -20,7 +20,7 @@ addprocs(4)
 @everywhere const h = 5e-2 # 5cm
 @everywhere const l = 2h # 5cm
 @everywhere const R = h # 5cm
-@everywhere const d = 0.5h # 5cm
+@everywhere const d = 0.3h # 5cm
 
 
 # Variables
@@ -240,6 +240,12 @@ function calculateResultWhen(; h::Float64, l::Float64)::ResultsOfMeanVarRate
         future = @spawn calculateBAtPoint(x, y, zs[end]; h=h, l=l)
         push!(futureBVectorsInTopPlane, future)
     end
+    zeroPlaneBxFile::IOStream = myOpen(;fileName="zeroPlaneBx.csv", modes="a", dirName=dirName, csvHeader=nothing)
+    zeroPlaneByFile::IOStream = myOpen(;fileName="zeroPlaneBy.csv", modes="a", dirName=dirName, csvHeader=nothing)
+    zeroPlaneBzFile::IOStream = myOpen(;fileName="zeroPlaneBz.csv", modes="a", dirName=dirName, csvHeader=nothing)
+    topPlaneBxFile::IOStream = myOpen(;fileName="topPlaneBx.csv", modes="a", dirName=dirName, csvHeader=nothing)
+    topPlaneByFile::IOStream = myOpen(;fileName="topPlaneBy.csv", modes="a", dirName=dirName, csvHeader=nothing)
+    topPlaneBzFile::IOStream = myOpen(;fileName="topPlaneBz.csv", modes="a", dirName=dirName, csvHeader=nothing)
 
     map(futureBVectorsInCube) do futureBVector
         bVector = fetch(futureBVector)
@@ -250,12 +256,6 @@ function calculateResultWhen(; h::Float64, l::Float64)::ResultsOfMeanVarRate
             maxBVector[i] = bVector[i] > maxBVector[i] ? bVector[i] : maxBVector[i]
         end
     end
-    zeroPlaneBxFile::IOStream = myOpen(;fileName="zeroPlaneBx.csv", modes="a", dirName=dirName, csvHeader=nothing)
-    zeroPlaneByFile::IOStream = myOpen(;fileName="zeroPlaneBy.csv", modes="a", dirName=dirName, csvHeader=nothing)
-    zeroPlaneBzFile::IOStream = myOpen(;fileName="zeroPlaneBz.csv", modes="a", dirName=dirName, csvHeader=nothing)
-    topPlaneBxFile::IOStream = myOpen(;fileName="topPlaneBx.csv", modes="a", dirName=dirName, csvHeader=nothing)
-    topPlaneByFile::IOStream = myOpen(;fileName="topPlaneBy.csv", modes="a", dirName=dirName, csvHeader=nothing)
-    topPlaneBzFile::IOStream = myOpen(;fileName="topPlaneBz.csv", modes="a", dirName=dirName, csvHeader=nothing)
     map(enumerate(futureBVectorsInZeroPlane)) do (index, futureBVector)
         bVector = fetch(futureBVector)
         bVector = abs.(bVector)
