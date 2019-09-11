@@ -14,10 +14,10 @@ addprocs(4)
 @everywhere const standardPhiOfConductor = 1.02e-3  # 1.02mm using AWG 20
 @everywhere const thicknessOfGFRPWall = 2e-2  # 2cm
 # Measurement Area
-@everywhere const X0 = 0.5e-2  # 2X0 = 1cm
-@everywhere const Y0 = 0.5e-2  # 2Y0 = 1cm
-@everywhere const Z0 = 0.5e-2  # 2Z0 = 1cm
-@everywhere const d = 0.3h
+@everywhere const X0 = 2.5e-2  # 2X0 = 1cm
+@everywhere const Y0 = 2.5e-2  # 2Y0 = 1cm
+@everywhere const Z0 = 2.5e-2  # 2Z0 = 1cm
+@everywhere const d = 0.5h
 
 
 # Variables
@@ -199,7 +199,7 @@ end
     local result::BVector = [0, 0, 0]
     # B from lower
     result .+= numericalIntegrateOf((u) -> c1(x, y, z; u=u, _y=pars.c1_y, _z=pars.c1_z, l=l))
-    result .+= numericalIntegrateOf((u) -> c2(x, y, z; u=u, _y=pars.c1_y, _z=pars.c1_z, l=l))
+    result .+= numericalIntegrateOf((u) -> c2(x, y, z; u=u, _y=pars.c2_y, _z=pars.c2_z, l=l))
     result .+= numericalIntegrateOf((u) -> c3(x, y, z; R=pars.c3_R, u=u, _z=pars.c3_z, l=l))
     result .+= numericalIntegrateOf((u) -> c4(x, y, z; R=pars.c4_R, u=u, _z=pars.c4_z, l=l))
     # B from upper
