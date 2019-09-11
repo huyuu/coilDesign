@@ -2,7 +2,7 @@
 import Pkg
 Pkg.add("FastGaussQuadrature")
 using FastGaussQuadrature
-nodes, weights = gausslegendre(100)
+nodes, weights = gausslegendre(200)
 println(nodes)
 println(weights)
 
