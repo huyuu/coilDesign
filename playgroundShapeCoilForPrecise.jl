@@ -19,9 +19,9 @@ addprocs(4)
 @everywhere const d = 0.5h
 @everywhere const l = 2h
 # Measurement Area
-@everywhere const X0 = 0.2h
-@everywhere const Y0 = 0.2h
-@everywhere const Z0 = 0.2h
+@everywhere const X0 = 0.5h
+@everywhere const Y0 = 0.5h
+@everywhere const Z0 = 0.5h
 
 
 # Variables
@@ -152,7 +152,7 @@ end
     local result::Float64 = 0
     # B from lower
     result += numericalIntegrateOf((_x) -> c1(x, y, z; _x=_x, _y=pars.c1_y, _z=pars.c1_z); lowerLimit=-l, upperLimit=l, n=sourceIntervals)
-    result += numericalIntegrateOf((_x) -> c2(x, y, z; _x=_x, _y=pars.c1_y, _z=pars.c1_z); lowerLimit=-l, upperLimit=l, n=sourceIntervals)
+    result += numericalIntegrateOf((_x) -> c2(x, y, z; _x=_x, _y=pars.c2_y, _z=pars.c2_z); lowerLimit=-l, upperLimit=l, n=sourceIntervals)
     result += numericalIntegrateOf((phi) -> c3(x, y, z; R=pars.c3_R, phi=phi, _z=pars.c3_z); lowerLimit=-pi/2, upperLimit=pi/2, n=sourceIntervals)
     result += numericalIntegrateOf((phi) -> c4(x, y, z; R=pars.c4_R, phi=phi, _z=pars.c4_z); lowerLimit=pi/2, upperLimit=3pi/2, n=sourceIntervals)
     # B from upper
