@@ -17,7 +17,6 @@ addprocs(4)
 @everywhere const X0 = 2.5e-2  # 2X0 = 1cm
 @everywhere const Y0 = 2.5e-2  # 2Y0 = 1cm
 @everywhere const Z0 = 2.5e-2  # 2Z0 = 1cm
-@everywhere const d = 0.5h
 
 
 # Variables
@@ -98,6 +97,7 @@ end
 @everywhere ParsOfSource(n::Int, h::Float64) = let
     index::PositionIndex = PositionIndex(n)
 
+    d = 0.6h
     c1_y =  -h - standardPhiOfConductor*(index.layer-1) - standardRadiusOfConductor
     c1_z = -d + index.centerDistance * standardPhiOfConductor
     c2_y = h + standardPhiOfConductor*(index.layer-1) + standardRadiusOfConductor

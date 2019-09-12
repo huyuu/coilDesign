@@ -36,7 +36,7 @@ filePathsToPlot = ['meanBx.csv', 'meanBz.csv', 'varriationRateX.csv', 'varriatio
 zDatas = [ (filePath, data[filePath]) for filePath in filePathsToPlot ]
 
 fig = pl.figure()
-ax = pl.axes(projection='3d')
+ax = fig.add_subplot(2, 2, 1,projection='3d')
 ax.set_xlabel('d [h]', fontsize=22, labelpad=24)
 ax.set_ylabel('l [h]', fontsize=22, labelpad=24)
 ax.set_zlabel('meanBx [mT]', fontsize=22, labelpad=24)
@@ -46,21 +46,19 @@ ax.plot_surface(xData.values, yData.values.reshape(1, len(yData)), zData.values*
 # xDataForScatter, yDataForScatter = nu.meshgrid(xData.values, yData.values)
 # zDataForScatter = data['meanBx.csv'].values.ravel()*1000
 # ax.scatter3D(xDataForScatter, yDataForScatter, zDataForScatter, c=zDataForScatter, cmap='viridis')
-pl.show()
 
-ax = pl.axes(projection='3d')
+ax = fig.add_subplot(2, 2, 2,projection='3d')
 ax.set_xlabel('d [h]', fontsize=22, labelpad=24)
 ax.set_ylabel('l [h]', fontsize=22, labelpad=24)
 ax.set_zlabel('meanBz [mT]', fontsize=22, labelpad=24)
 ax.tick_params(labelsize=22)
 zData = data['meanBz.csv']
-ax.plot_surface(xData.values, yData.values.reshape(1, len(yData)), zData.values*1000, cmap='Reds')
+ax.plot_surface(xData.values, yData.values.reshape(1, len(yData)), zData.values*1000, cmap='viridis')
 # xDataForScatter, yDataForScatter = nu.meshgrid(xData.values, yData.values)
 # zDataForScatter = data['meanBz.csv'].values.ravel()*1000
 # ax.scatter3D(xDataForScatter, yDataForScatter, zDataForScatter, c=zDataForScatter, cmap='viridis')
-pl.show()
 
-ax = pl.axes(projection='3d')
+ax = fig.add_subplot(2, 2, 3,projection='3d')
 ax.set_xlabel('d [h]', fontsize=22, labelpad=24)
 ax.set_ylabel('l [h]', fontsize=22, labelpad=24)
 ax.set_zlabel('varRateX [%]', fontsize=22, labelpad=24)
@@ -70,15 +68,14 @@ ax.plot_surface(xData.values, yData.values.reshape(1, len(yData)), zData.values*
 # xDataForScatter, yDataForScatter = nu.meshgrid(xData.values, yData.values)
 # zDataForScatter = data['varriationRateX.csv'].values.ravel()*100
 # ax.scatter3D(xDataForScatter, yDataForScatter, zDataForScatter, c=zDataForScatter, cmap='viridis')
-pl.show()
 
-ax = pl.axes(projection='3d')
+ax = fig.add_subplot(2, 2, 4,projection='3d')
 ax.set_xlabel('d [h]', fontsize=22, labelpad=24)
 ax.set_ylabel('l [h]', fontsize=22, labelpad=24)
 ax.set_zlabel('varRateZ [%]', fontsize=22, labelpad=24)
 ax.tick_params(labelsize=22)
 zData = data['varriationRateZ.csv']
-ax.plot_surface(xData.values, yData.values.reshape(1, len(yData)), zData.values*100, cmap='Reds')
+ax.plot_surface(xData.values, yData.values.reshape(1, len(yData)), zData.values*100, cmap='viridis')
 # xDataForScatter, yDataForScatter = nu.meshgrid(xData.values, yData.values)
 # zDataForScatter = data['varriationRateZ.csv'].values.ravel()*100
 # ax.scatter3D(xDataForScatter, yDataForScatter, zDataForScatter, c=zDataForScatter, cmap='viridis')
