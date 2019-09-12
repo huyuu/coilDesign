@@ -3,6 +3,7 @@ using Distributed
 addprocs(4)
 @everywhere using Statistics
 
+
 # Constants
 # Physical Constants
 @everywhere const μ = 4pi*1e-7
@@ -29,7 +30,7 @@ addprocs(4)
 @everywhere const sampleIntervals = 20
 @everywhere const samplePoints = sampleIntervals+1
 # Gauss Integral Nodes and Weights
-@everywhere const nodes = let
+@everywhere const nodes = let nodes
     nodes = []
     open("gaussNodesForPrecise.csv", "r") do file
         lines = readlines(file)
@@ -40,7 +41,7 @@ addprocs(4)
     end
     nodes
 end
-@everywhere const weights = let
+@everywhere const weights = let weights
     weights = []
     open("gaussWeightsForPrecise.csv", "r") do file
         lines = readlines(file)
@@ -145,7 +146,7 @@ end
 @everywhere function numericalIntegrateOf(f::Function)::BVector
     local result::BVector = [0, 0, 0]
     for (node, weight) in zip(nodes, weights)
-        result += weight * f(node)
+        result .+= weight * f(node)
     end
     return result
 end

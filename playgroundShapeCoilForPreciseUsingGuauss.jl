@@ -19,14 +19,14 @@ addprocs(4)
 @everywhere const d = 0.5h
 @everywhere const l = 2h
 # Measurement Area
-@everywhere const X0 = 1e-2
-@everywhere const Y0 = 1e-2
-@everywhere const Z0 = 1e-2
+@everywhere const X0 = 0.5e-2
+@everywhere const Y0 = 0.5e-2
+@everywhere const Z0 = 0.5e-2
 # # Gauss Integral Nodes and Weights
 # @everywhere import Pkg
 # @everywhere Pkg.add("FastGaussQuadrature")
 # @everywhere using FastGaussQuadrature
-# @everywhere const nodes, weights = gausslaguerre(100)
+# @everywhere const nodes, weights = gausslaguerre(10)
 # Gauss Integral Nodes and Weights
 @everywhere const nodes = let
     nodes = []
@@ -41,7 +41,7 @@ addprocs(4)
 end
 @everywhere const weights = let
     weights = []
-    open("precise/gaussNodesForPrecise.csv", "r") do file
+    open("precise/gaussWeightsForPrecise.csv", "r") do file
         lines = readlines(file)
         for line in lines
             newWeight = parse(Float64, line)
@@ -179,7 +179,7 @@ end
     local result::Float64 = 0
     # B from lower
     result += numericalIntegrateOf((u) -> c1(x, y, z; u=u, _y=pars.c1_y, _z=pars.c1_z))
-    result += numericalIntegrateOf((u) -> c2(x, y, z; u=u, _y=pars.c1_y, _z=pars.c1_z))
+    result += numericalIntegrateOf((u) -> c2(x, y, z; u=u, _y=pars.c2_y, _z=pars.c2_z))
     result += numericalIntegrateOf((u) -> c3(x, y, z; R=pars.c3_R, u=u, _z=pars.c3_z))
     result += numericalIntegrateOf((u) -> c4(x, y, z; R=pars.c4_R, u=u, _z=pars.c4_z))
     # B from upper
@@ -271,12 +271,12 @@ let resultsInZ0PlaneFile, bs, resultFile
 	# init final results
     bs = zeros((length(xs), length(ys), length(zs)))
 	# main calculation of b at sample points
-    for (zIndex, zValue) in enumerate(zs), (yIndex, yValue) in enumerate(ys), (xIndex, xValue) in enumerate(xs)
+    for (zIndex, zValue) in enumerate(zs), (xIndex, xValue) in enumerate(xs), (yIndex, yValue) in enumerate(ys)
         b::Float64 = @time calculateBAt(xValue, yValue, zValue)
         bs[xIndex, yIndex, zIndex] = b
         # result storation
         if zIndex == length(zs)
-            if xIndex == length(xs)
+            if yIndex == length(ys)
                 write(resultsInZ0PlaneFile, "$b\n")
             else
                 write(resultsInZ0PlaneFile, "$b,")
