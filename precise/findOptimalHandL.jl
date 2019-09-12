@@ -138,12 +138,14 @@ end
 
 
 struct ResultsOfMeanVarRate
+    maxBVector::BVector
+    minBVector::BVector
     meanBVector::BVector
     varRateVector::BVector
 end
 ResultsOfMeanVarRate(meanBVector::BVector, minBVector::BVector, maxBVector::BVector) = let
     varRateVector = (maxBVector .- minBVector) ./ meanBVector
-    ResultsOfMeanVarRate(meanBVector, varRateVector)
+    ResultsOfMeanVarRate(maxBVector, minBVector, meanBVector, varRateVector)
 end
 
 
@@ -311,6 +313,12 @@ let
 		meanBxFile = myOpen(;fileName="meanBx.csv", modes="a", dirName=dirName, csvHeader=nothing)
 		meanByFile = myOpen(;fileName="meanBy.csv", modes="a", dirName=dirName, csvHeader=nothing)
 		meanBzFile = myOpen(;fileName="meanBz.csv", modes="a", dirName=dirName, csvHeader=nothing)
+		maxBxFile = myOpen(;fileName="maxBx.csv", modes="a", dirName=dirName, csvHeader=nothing)
+		maxByFile = myOpen(;fileName="maxBy.csv", modes="a", dirName=dirName, csvHeader=nothing)
+		maxBzFile = myOpen(;fileName="maxBz.csv", modes="a", dirName=dirName, csvHeader=nothing)
+		minBxFile = myOpen(;fileName="minBx.csv", modes="a", dirName=dirName, csvHeader=nothing)
+		minByFile = myOpen(;fileName="minBy.csv", modes="a", dirName=dirName, csvHeader=nothing)
+		minBzFile = myOpen(;fileName="minBz.csv", modes="a", dirName=dirName, csvHeader=nothing)
 		varRateXFile = myOpen(;fileName="varriationRateX.csv", modes="a", dirName=dirName, csvHeader=nothing)
 		varRateYFile = myOpen(;fileName="varriationRateY.csv", modes="a", dirName=dirName, csvHeader=nothing)
 		varRateZFile = myOpen(;fileName="varriationRateZ.csv", modes="a", dirName=dirName, csvHeader=nothing)
@@ -319,6 +327,12 @@ let
 			write(meanBxFile, "$(result.meanBVector[1])\n")
 			write(meanByFile, "$(result.meanBVector[2])\n")
 			write(meanBzFile, "$(result.meanBVector[3])\n")
+			write(maxBxFile, "$(result.maxBVector[1])\n")
+			write(maxByFile, "$(result.maxBVector[2])\n")
+			write(maxBzFile, "$(result.maxBVector[3])\n")
+			write(minBxFile, "$(result.minBVector[1])\n")
+			write(minByFile, "$(result.minBVector[2])\n")
+			write(minBzFile, "$(result.minBVector[3])\n")
             write(varRateXFile, "$(result.varRateVector[1])\n")
             write(varRateYFile, "$(result.varRateVector[2])\n")
             write(varRateZFile, "$(result.varRateVector[3])\n")
@@ -326,12 +340,18 @@ let
             write(meanBxFile, "$(result.meanBVector[1]),")
             write(meanByFile, "$(result.meanBVector[2]),")
             write(meanBzFile, "$(result.meanBVector[3]),")
+            write(maxBxFile, "$(result.maxBVector[1]),")
+            write(maxByFile, "$(result.maxBVector[2]),")
+            write(maxBzFile, "$(result.maxBVector[3]),")
+            write(minBxFile, "$(result.minBVector[1]),")
+            write(minByFile, "$(result.minBVector[2]),")
+            write(minBzFile, "$(result.minBVector[3]),")
             write(varRateXFile, "$(result.varRateVector[1]),")
             write(varRateYFile, "$(result.varRateVector[2]),")
             write(varRateZFile, "$(result.varRateVector[3]),")
 		end
         # closing files
-        map((meanBxFile, meanByFile, meanBzFile, varRateXFile, varRateYFile, varRateZFile)) do file
+        map((meanBxFile, meanByFile, meanBzFile, maxBxFile, maxByFile, maxBzFile, minBxFile, minByFile, minBzFile, varRateXFile, varRateYFile, varRateZFile)) do file
             close(file)
         end
 	end
