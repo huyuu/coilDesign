@@ -16,7 +16,7 @@ addprocs(4)
 # Coil Shape
 @everywhere const h = 5e-2
 # Measurement Area
-@everywhere const X0 = 2.5e-2  # 1cm
+@everywhere const X0 = 7e-2  # 1cm
 @everywhere const Y0 = 2.5e-2  # 1cm
 @everywhere const Z0 = 2.5e-2  # 1cm
 # Gauss Integral Nodes and Weights

@@ -61,7 +61,7 @@ ax.plot_surface(xData.values, yData.values.reshape(1, len(yData)), zData.values*
 ax = fig.add_subplot(2, 2, 3,projection='3d')
 ax.set_xlabel('d [h]', fontsize=22, labelpad=24)
 ax.set_ylabel('l [h]', fontsize=22, labelpad=24)
-ax.set_zlabel('varRateX [%]', fontsize=22, labelpad=24)
+ax.set_zlabel('Variation Rate X [%]', fontsize=22, labelpad=24)
 ax.tick_params(labelsize=22)
 zData = data['varriationRateX.csv']
 ax.plot_surface(xData.values, yData.values.reshape(1, len(yData)), zData.values*100, cmap='Blues')
@@ -72,7 +72,7 @@ ax.plot_surface(xData.values, yData.values.reshape(1, len(yData)), zData.values*
 ax = fig.add_subplot(2, 2, 4,projection='3d')
 ax.set_xlabel('d [h]', fontsize=22, labelpad=24)
 ax.set_ylabel('l [h]', fontsize=22, labelpad=24)
-ax.set_zlabel('varRateZ [%]', fontsize=22, labelpad=24)
+ax.set_zlabel('Variation Rate Z [%]', fontsize=22, labelpad=24)
 ax.tick_params(labelsize=22)
 zData = data['varriationRateZ.csv']
 ax.plot_surface(xData.values, yData.values.reshape(1, len(yData)), zData.values*100, cmap='viridis')
